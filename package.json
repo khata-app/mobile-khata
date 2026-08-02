@@ -2,9 +2,17 @@
   "name": "khata-refactor",
   "private": true,
   "packageManager": "pnpm@10.12.3",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": "10.12.3"
+  },
   "scripts": {
-    "type-check": "pnpm --dir apps/khata type-check",
-    "lint": "pnpm --dir apps/khata lint",
-    "test": "pnpm --dir apps/khata test --runInBand"
+    "dev": "pnpm run web",
+    "web": "pnpm --dir apps web",
+    "mobile": "pnpm --dir apps android",
+    "type-check": "pnpm --dir apps type-check",
+    "lint": "pnpm --dir apps lint",
+    "test": "pnpm --dir apps test",
+    "check-all": "pnpm --dir apps check-all"
   }
 }
