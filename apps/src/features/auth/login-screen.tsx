@@ -8,11 +8,13 @@ import { useAuthStore } from './use-auth-store';
 
 export function LoginScreen() {
   const router = useRouter();
+  const [mode, setMode] = React.useState<'login' | 'register'>('login');
   const onSubmit: LoginFormProps['onSubmit'] = async (data) => {
-    const { error } = await (await import('@/lib/supabase')).supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    });
+    const { supabase } = await import('@/lib/supabase');
+    const result = mode === 'register'
+      ? await supabase.auth.signUp({ email: data.email, password: data.password, options: { data: { display_name: data.name } } })
+      : await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
+    const { error } = result;
     if (error) throw error;
     router.replace('/');
   };
@@ -20,7 +22,7 @@ export function LoginScreen() {
   return (
     <>
       <FocusAwareStatusBar />
-      <LoginForm onSubmit={onSubmit} />
+      <LoginForm onSubmit={onSubmit} mode={mode} onModeChange={setMode} />
     </>
   );
 }
