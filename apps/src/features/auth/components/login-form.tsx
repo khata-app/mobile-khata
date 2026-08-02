@@ -27,9 +27,11 @@ export type FormType = z.infer<typeof schema>;
 
 export type LoginFormProps = {
   onSubmit?: (data: FormType) => void;
+  mode?: 'login' | 'register';
+  onModeChange?: (mode: 'login' | 'register') => void;
 };
 
-export function LoginForm({ onSubmit = () => {} }: LoginFormProps) {
+export function LoginForm({ onSubmit = () => {}, mode = 'login', onModeChange }: LoginFormProps) {
   const form = useForm({
     defaultValues: {
       name: '',
@@ -57,15 +59,15 @@ export function LoginForm({ onSubmit = () => {} }: LoginFormProps) {
             testID="form-title"
             className="pb-6 text-center text-4xl font-bold"
           >
-            Sign In
+            {mode === 'register' ? 'Create your Khata account' : 'Login to Khata'}
           </Text>
 
           <Text className="mb-6 max-w-xs text-center text-gray-500">
-            Sign in to your Khata account. Your session is securely persisted on this device.
+            Role-based accounting access for admins, accountants, and employees.
           </Text>
         </View>
 
-        <form.Field
+        {mode === 'register' && <form.Field
           name="name"
           children={field => (
             <Input
@@ -77,7 +79,7 @@ export function LoginForm({ onSubmit = () => {} }: LoginFormProps) {
               error={getFieldError(field)}
             />
           )}
-        />
+        />}
 
         <form.Field
           name="email"
@@ -114,7 +116,7 @@ export function LoginForm({ onSubmit = () => {} }: LoginFormProps) {
           children={([isSubmitting]) => (
             <Button
               testID="login-button"
-              label="Login"
+              label={mode === 'register' ? 'Create account' : 'Login'}
               onPress={form.handleSubmit}
               loading={isSubmitting}
             />

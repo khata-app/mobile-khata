@@ -1,0 +1,15 @@
+create extension if not exists pgcrypto;
+create table public.profiles (id uuid primary key references auth.users(id) on delete cascade, display_name text, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create table public.businesses (id uuid primary key default gen_random_uuid(), name text not null, slug text not null unique, pan_number text, currency_code text not null default 'NPR', timezone text not null default 'Asia/Kathmandu', created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create type public.member_role as enum ('owner', 'accountant', 'staff', 'auditor');
+create table public.business_memberships (business_id uuid not null references public.businesses(id) on delete cascade, user_id uuid not null references auth.users(id) on delete cascade, role public.member_role not null default 'staff', created_at timestamptz not null default now(), primary key (business_id, user_id));
+create index business_memberships_user_idx on public.business_memberships(user_id);
+create function public.is_business_member(target_business_id uuid) returns boolean language sql stable security definer set search_path = public as $$ select exists (select 1 from public.business_memberships where business_id = target_business_id and user_id = auth.uid()); $$;
+alter table public.profiles enable row level security;
+alter table public.businesses enable row level security;
+alter table public.business_memberships enable row level security;
+create policy profiles_self on public.profiles for all to authenticated using (id = auth.uid()) with check (id = auth.uid());
+create policy businesses_member_read on public.businesses for select to authenticated using (public.is_business_member(id));
+create policy memberships_self_read on public.business_memberships for select to authenticated using (user_id = auth.uid() or public.is_business_member(business_id));
+create function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$ begin insert into public.profiles (id, display_name) values (new.id, new.raw_user_meta_data->>'display_name') on conflict (id) do update set display_name = excluded.display_name; return new; end; $$;
+create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
