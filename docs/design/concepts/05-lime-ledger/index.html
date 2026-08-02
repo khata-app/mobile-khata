@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#faf7f0">
+  <title>Khata — Lime Ledger</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --leaf:#1f6f3a;--leaf-deep:#0f3d20;--lime:#c6f24e;--lime-soft:#e8fab0;
+      --cream:#f4efe6;--paper:#faf7f0;--white:#fff;--ink:#0c1410;--muted:#4a5a50;
+      --warn:#b95a16;--warn-soft:#ffe1be;--danger:#d4391f;--danger-soft:#ffd7cc;
+      --blue:#55b6c6;--purple:#9a78d1;--shadow:3px 3px 0 var(--ink);
+    }
+    *{box-sizing:border-box}html,body{min-height:100%}body{margin:0;color:var(--ink);background:var(--cream);font-family:"Bricolage Grotesque",system-ui,sans-serif;font-feature-settings:"ss01","ss02"}button,input{font:inherit;color:inherit}button{cursor:pointer}.mono{font-family:"JetBrains Mono",ui-monospace,monospace}button:focus-visible,input:focus-visible{outline:4px solid var(--lime);outline-offset:3px}
+    .shell{min-height:100vh;display:grid;grid-template-columns:292px minmax(480px,1fr) 336px;grid-template-rows:72px minmax(0,1fr);grid-template-areas:"top top top" "left main right"}
+    .top{grid-area:top;display:flex;align-items:center;gap:24px;padding:0 26px;background:var(--paper);border-bottom:2px solid var(--ink);position:sticky;top:0;z-index:20}.brand{display:flex;align-items:center;gap:13px;min-width:266px}.logo{width:38px;height:38px;border-radius:10px;background:var(--leaf);color:var(--lime);border:2px solid var(--ink);box-shadow:var(--shadow);display:grid;place-items:center;font-size:20px;font-weight:800}.wordmark{font-size:22px;font-weight:800;letter-spacing:-.03em}.wordmark span{color:var(--leaf)}.tenant{border:2px solid var(--ink);background:var(--white);border-radius:999px;padding:8px 13px;font-weight:700;box-shadow:2px 2px 0 var(--ink)}.top-spacer{flex:1}.meta{display:flex;gap:20px;align-items:center;color:var(--muted);font:600 10px/1.2 "JetBrains Mono",monospace;letter-spacing:.08em;text-transform:uppercase}.meta b{color:var(--ink)}.dot{display:inline-block;width:10px;height:10px;margin-right:7px;border-radius:50%;border:2px solid var(--ink);background:var(--lime);animation:pulse 1.4s ease-in-out infinite}@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(198,242,78,0)}0%,100%{box-shadow:0 0 0 0 rgba(198,242,78,.7)}}
+    aside{background:var(--paper);padding:24px 20px;overflow:auto}.left{grid-area:left;border-right:2px solid var(--ink)}.right{grid-area:right;border-left:2px solid var(--ink)}.group-title{display:flex;align-items:center;gap:8px;margin:0 4px 13px;color:var(--muted);font:600 10px/1.2 "JetBrains Mono",monospace;letter-spacing:.16em;text-transform:uppercase}.group-title:before{content:"";width:18px;height:2px;background:var(--leaf)}
+    .nav{display:grid;gap:9px}.nav button{min-height:48px;display:flex;align-items:center;gap:11px;width:100%;padding:0 13px;border:2px solid transparent;border-radius:11px;background:transparent;text-align:left;font-weight:700}.nav button:hover{border-color:var(--ink);background:var(--white)}.nav button.active{border-color:var(--ink);background:var(--lime);box-shadow:var(--shadow)}.nav-icon{width:25px;font-size:18px;text-align:center}.nav-count{margin-left:auto;border:1.5px solid var(--ink);border-radius:999px;padding:2px 7px;background:var(--paper);font:600 9px "JetBrains Mono",monospace}.rule{border:0;border-top:2px dashed var(--ink);opacity:.2;margin:24px 0}
+    .quick-stack{display:grid;gap:10px}.quick{position:relative;min-height:82px;border:2px solid var(--ink);border-radius:13px;background:var(--white);box-shadow:var(--shadow);padding:13px 14px;text-align:left;transition:.1s}.quick:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}.quick:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}.quick.primary{background:var(--lime)}.quick .symbol{font-size:21px;font-weight:800}.quick strong,.quick small{display:block}.quick strong{margin-top:6px}.quick small{margin-top:3px;color:var(--muted);font-size:11px}.offline-card{border:2px solid var(--ink);border-radius:13px;background:var(--leaf-deep);color:var(--paper);padding:14px;box-shadow:var(--shadow)}.offline-card strong{display:block}.offline-card p{margin:6px 0 0;color:var(--lime-soft);font-size:12px;line-height:1.5}
+    main{grid-area:main;min-width:0;padding:27px 30px 38px;background:radial-gradient(ellipse at top right,rgba(198,242,78,.28),transparent 42%),radial-gradient(ellipse at bottom left,rgba(31,111,58,.09),transparent 46%),var(--cream);overflow:auto}.eyebrow{margin:0 0 8px;color:var(--muted);font:600 10px "JetBrains Mono",monospace;letter-spacing:.15em;text-transform:uppercase}.headline{display:flex;align-items:end;justify-content:space-between;gap:20px}.headline h1{max-width:650px;margin:0;font-size:clamp(34px,4vw,52px);line-height:.95;letter-spacing:-.045em}.headline h1 em{display:inline-block;padding:0 9px 3px;border:2px solid var(--ink);border-radius:8px;background:var(--lime);color:var(--leaf);box-shadow:var(--shadow);font-style:normal;transform:rotate(-1.5deg)}.date-switch{white-space:nowrap;border:2px solid var(--ink);border-radius:11px;background:var(--paper);box-shadow:var(--shadow);padding:10px 12px;font:600 10px "JetBrains Mono",monospace}.date-switch span{color:var(--leaf)}
+    .hero-grid{display:grid;grid-template-columns:minmax(260px,1.15fr) minmax(230px,.85fr);gap:14px;margin-top:22px}.balance-card{min-height:202px;border:2px solid var(--ink);border-radius:18px;background:var(--leaf-deep);color:var(--paper);box-shadow:6px 6px 0 var(--ink);padding:22px;display:flex;flex-direction:column;overflow:hidden;position:relative}.balance-card:after{content:"रु";position:absolute;right:-8px;bottom:-50px;color:rgba(198,242,78,.12);font-size:170px;font-weight:800;transform:rotate(-8deg)}.balance-card .label{font:600 10px "JetBrains Mono",monospace;letter-spacing:.15em;text-transform:uppercase;color:var(--lime-soft)}.balance-card strong{position:relative;z-index:1;margin-top:auto;font-size:clamp(38px,5vw,58px);line-height:1;letter-spacing:-.05em;font-variant-numeric:tabular-nums}.balance-card small{position:relative;z-index:1;margin-top:10px;color:var(--lime-soft)}.balance-card small b{color:var(--lime)}
+    .signal-card{border:2px solid var(--ink);border-radius:18px;background:var(--paper);box-shadow:6px 6px 0 var(--ink);padding:18px;display:flex;flex-direction:column}.signal-head{display:flex;align-items:center;justify-content:space-between}.signal-head span:first-child{font:600 10px "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}.badge{border:1.5px solid var(--ink);border-radius:999px;background:var(--lime);padding:4px 9px;font:600 9px "JetBrains Mono",monospace;text-transform:uppercase}.signal-card h2{font-size:26px;line-height:1;margin:18px 0 6px;letter-spacing:-.03em}.signal-card p{margin:0;color:var(--muted);font-size:12px}.mini-bars{display:grid;gap:8px;margin-top:auto}.mini-row{display:grid;grid-template-columns:66px 1fr 42px;gap:8px;align-items:center;font:600 9px "JetBrains Mono",monospace}.track{height:10px;border:1.5px solid var(--ink);border-radius:999px;background:var(--white);overflow:hidden}.track i{display:block;height:100%;background:var(--leaf)}.mini-row:nth-child(2) .track i{background:var(--warn)}
+    .section-head{display:flex;align-items:center;justify-content:space-between;margin:28px 0 12px}.section-head h2{margin:0;font-size:19px;letter-spacing:-.02em}.text-btn{min-height:40px;border:0;background:transparent;color:var(--leaf);font-weight:800}.entries{border:2px solid var(--ink);border-radius:17px;background:var(--paper);box-shadow:5px 5px 0 var(--ink);overflow:hidden}.entry{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:12px;align-items:center;padding:13px 15px;border-bottom:2px solid var(--ink)}.entry:last-child{border:0}.entry:hover{background:var(--lime-soft)}.entry-icon{width:44px;height:44px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:10px;background:var(--lime);font-weight:800}.entry:nth-child(2) .entry-icon{background:var(--blue)}.entry:nth-child(3) .entry-icon{background:var(--warn-soft)}.entry:nth-child(4) .entry-icon{background:var(--danger-soft)}.entry strong,.entry small{display:block}.entry small{margin-top:4px;color:var(--muted);font:400 10px "JetBrains Mono",monospace}.amount{text-align:right}.amount strong{font:600 13px "JetBrains Mono",monospace}.state{display:inline-block;margin-top:5px;padding:3px 8px;border:1.5px solid var(--ink);border-radius:999px;background:var(--lime);font:600 8px "JetBrains Mono",monospace;text-transform:uppercase}.state.wait{background:var(--warn-soft)}.state.review{background:var(--danger-soft);color:var(--danger)}
+    .attention{display:grid;gap:11px}.attention-item{border:2px solid var(--ink);border-radius:13px;background:var(--white);box-shadow:var(--shadow);padding:13px}.attention-top{display:flex;align-items:start;gap:10px}.pin{width:12px;height:12px;margin-top:4px;border:2px solid var(--ink);border-radius:4px;background:var(--warn)}.pin.danger{background:var(--danger)}.attention strong,.attention small{display:block}.attention small{margin-top:4px;color:var(--muted);line-height:1.4}.attention button{width:100%;margin-top:11px;min-height:38px;border:2px solid var(--ink);border-radius:9px;background:var(--paper);font-weight:700;box-shadow:2px 2px 0 var(--ink)}.attention button:hover{background:var(--lime)}
+    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.stat{border:2px solid var(--ink);border-radius:12px;background:var(--white);box-shadow:2px 2px 0 var(--ink);padding:12px}.stat span{display:block;color:var(--muted);font:600 8px "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.1em}.stat strong{display:block;margin-top:7px;font-size:20px}.history{display:grid;gap:8px}.history-item{display:flex;gap:9px;align-items:center;border:1.5px solid var(--ink);border-radius:8px;background:var(--white);padding:8px 9px;font:400 10px "JetBrains Mono",monospace}.history-item b{margin-left:auto}.history-dot{width:9px;height:9px;border:1.5px solid var(--ink);border-radius:3px;background:var(--lime)}.history-item:nth-child(2) .history-dot{background:var(--warn)}.history-item:nth-child(3) .history-dot{background:var(--blue)}
+    .mobile-nav{display:none}.toast{position:fixed;left:50%;bottom:24px;z-index:50;transform:translate(-50%,14px);opacity:0;pointer-events:none;border:2px solid var(--ink);border-radius:11px;background:var(--leaf-deep);color:var(--paper);box-shadow:var(--shadow);padding:11px 17px;font-weight:700;transition:.18s}.toast.show{opacity:1;transform:translate(-50%,0)}
+    dialog{width:min(520px,calc(100% - 28px));padding:0;border:2px solid var(--ink);border-radius:17px;background:var(--paper);box-shadow:7px 7px 0 var(--ink)}dialog::backdrop{background:rgba(12,20,16,.55)}.modal{padding:23px}.modal h2{margin:0;font-size:30px;letter-spacing:-.035em}.modal p{color:var(--muted)}.field{display:grid;gap:6px;margin-top:14px}.field label{font:600 10px "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.1em}.field input{min-height:48px;border:2px solid var(--ink);border-radius:9px;background:var(--white);padding:0 12px}.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}.btn{min-height:44px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);box-shadow:var(--shadow);padding:0 15px;font-weight:800}.btn.primary{background:var(--lime)}
+    @media(max-width:1180px){.shell{grid-template-columns:240px minmax(460px,1fr) 290px}.meta span:nth-child(2){display:none}.left,.right{padding-inline:15px}.brand{min-width:214px}main{padding-inline:22px}}
+    @media(max-width:960px){.shell{grid-template-columns:88px minmax(0,1fr) 282px}.brand-copy,.group-title,.quick small,.nav button span,.offline-card p{display:none}.brand{min-width:64px}.left{padding:20px 10px}.nav button{justify-content:center;padding:0}.nav-count{display:none}.quick{text-align:center;min-height:62px;padding:9px}.quick strong{font-size:10px}.right{padding-inline:13px}.hero-grid{grid-template-columns:1fr}.signal-card{min-height:190px}}
+    @media(max-width:760px){body{padding-bottom:76px}.shell{display:block}.top{height:64px;padding:0 16px}.tenant,.meta span:nth-child(n+2){display:none}.top-spacer{display:block}.left,.right{display:none}main{padding:22px 16px 34px;overflow:visible}.headline{display:block}.headline h1{font-size:39px}.date-switch{display:inline-block;margin-top:17px}.hero-grid{display:flex;overflow:auto;margin-inline:-16px;padding:0 16px 8px;scroll-snap-type:x mandatory}.balance-card,.signal-card{min-width:86vw;scroll-snap-align:center}.entry{grid-template-columns:44px minmax(0,1fr)}.amount{grid-column:2;text-align:left}.mobile-nav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;border-top:2px solid var(--ink);background:var(--paper);padding:6px 6px max(6px,env(safe-area-inset-bottom))}.mobile-nav button{min-height:56px;border:0;border-radius:8px;background:transparent;font-size:10px;font-weight:800}.mobile-nav button b{display:block;font-size:18px}.mobile-nav button.active{border:2px solid var(--ink);background:var(--lime);box-shadow:2px 2px 0 var(--ink)}.toast{bottom:90px;width:calc(100% - 32px);text-align:center}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="top">
+      <div class="brand"><div class="logo">K</div><div class="brand-copy wordmark">khata<span>.</span></div></div>
+      <button class="tenant" data-action="tenant">Himalayan Stores⌄</button>
+      <div class="top-spacer"></div>
+      <div class="meta">
+        <span><i class="dot"></i><b id="syncText">all synced</b></span>
+        <span>FY · <b>2082/83</b></span>
+        <span>language · <b id="lang">EN</b></span>
+      </div>
+    </header>
+
+    <aside class="left">
+      <div class="group-title">Your workspace</div>
+      <nav class="nav" aria-label="Primary navigation">
+        <button class="active" data-nav="Today"><i class="nav-icon">⌂</i><span>Today</span></button>
+        <button data-nav="Sales"><i class="nav-icon">↗</i><span>Sales</span></button>
+        <button data-nav="Purchases"><i class="nav-icon">↙</i><span>Purchases</span><b class="nav-count">2</b></button>
+        <button data-nav="Inventory"><i class="nav-icon">▦</i><span>Inventory</span><b class="nav-count">6</b></button>
+        <button data-nav="Reports"><i class="nav-icon">▤</i><span>Reports</span></button>
+        <button data-nav="More"><i class="nav-icon">•••</i><span>More</span></button>
+      </nav>
+      <hr class="rule">
+      <div class="group-title">Quick entry</div>
+      <div class="quick-stack">
+        <button class="quick primary" data-action="sale"><span class="symbol">↗</span><strong>Record sale</strong><small>Cash or credit</small></button>
+        <button class="quick" data-action="purchase"><span class="symbol">↙</span><strong>Add purchase</strong><small>Manual or scan bill</small></button>
+      </div>
+      <hr class="rule">
+      <button class="offline-card" data-action="offline"><strong>● Works offline</strong><p>New work stays safely on this device until the connection returns.</p></button>
+    </aside>
+
+    <main>
+      <p class="eyebrow">// Thursday · 08 Shrawan 2083</p>
+      <div class="headline">
+        <h1>Today’s books, <em>at a glance.</em></h1>
+        <button class="date-switch" data-action="date"><span>BS</span> · AD</button>
+      </div>
+
+      <section class="hero-grid" aria-label="Daily summary">
+        <article class="balance-card">
+          <span class="label">Confirmed cash on hand</span>
+          <strong>रु 84,250</strong>
+          <small>Updated 10:42 · <b>balanced</b></small>
+        </article>
+        <article class="signal-card">
+          <div class="signal-head"><span>Today’s signal</span><span class="badge">Healthy</span></div>
+          <h2>रु 15,750 ahead</h2>
+          <p>Confirmed money in, after today’s spending.</p>
+          <div class="mini-bars">
+            <div class="mini-row"><span>Money in</span><span class="track"><i style="width:82%"></i></span><b>24.5k</b></div>
+            <div class="mini-row"><span>Money out</span><span class="track"><i style="width:31%"></i></span><b>8.75k</b></div>
+          </div>
+        </article>
+      </section>
+
+      <div class="section-head"><h2>Latest entries</h2><button class="text-btn" data-action="entries">See all →</button></div>
+      <section class="entries" aria-label="Latest entries">
+        <article class="entry"><span class="entry-icon">RM</span><div><strong>Ramesh Mart</strong><small>SAL-2082-0148 · 10:38</small></div><div class="amount"><strong>+ रु 8,500</strong><span class="state">Confirmed</span></div></article>
+        <article class="entry"><span class="entry-icon">WC</span><div><strong>Walk-in customer</strong><small>DRAFT-A19 · 10:31</small></div><div class="amount"><strong>+ रु 2,900</strong><span class="state wait">Waiting to sync</span></div></article>
+        <article class="entry"><span class="entry-icon">NP</span><div><strong>Nepal Paper Supply</strong><small>PUR-2082-0082 · 09:52</small></div><div class="amount"><strong>− रु 8,750</strong><span class="state">Confirmed</span></div></article>
+        <article class="entry"><span class="entry-icon">SD</span><div><strong>Shree Distributors</strong><small>OCR-DRAFT-031 · 09:16</small></div><div class="amount"><strong>रु 16,230</strong><span class="state review">Check 3 fields</span></div></article>
+      </section>
+    </main>
+
+    <aside class="right">
+      <div class="group-title">Needs attention</div>
+      <div class="attention">
+        <article class="attention-item"><div class="attention-top"><i class="pin danger"></i><div><strong>Bill needs review</strong><small>Shree Distributors · 3 suggested fields</small></div></div><button data-action="review">Review bill →</button></article>
+        <article class="attention-item"><div class="attention-top"><i class="pin"></i><div><strong>6 items are running low</strong><small>2 may run out before the weekend</small></div></div><button data-action="stock">Check stock →</button></article>
+      </div>
+      <hr class="rule">
+      <div class="group-title">Today in numbers</div>
+      <div class="stat-grid">
+        <article class="stat"><span>Sales</span><strong>12</strong></article>
+        <article class="stat"><span>To collect</span><strong>4</strong></article>
+        <article class="stat"><span>Pending</span><strong>1</strong></article>
+        <article class="stat"><span>Low stock</span><strong>6</strong></article>
+      </div>
+      <hr class="rule">
+      <div class="group-title">Recent activity</div>
+      <div class="history">
+        <div class="history-item"><i class="history-dot"></i><span>Sale confirmed</span><b>10:38</b></div>
+        <div class="history-item"><i class="history-dot"></i><span>Draft saved locally</span><b>10:31</b></div>
+        <div class="history-item"><i class="history-dot"></i><span>Purchase posted</span><b>09:52</b></div>
+      </div>
+    </aside>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <button class="active" data-nav="Today"><b>⌂</b>Today</button>
+    <button data-nav="Entries"><b>⇄</b>Entries</button>
+    <button data-action="sale"><b>＋</b>New sale</button>
+    <button data-nav="More"><b>•••</b>More</button>
+  </nav>
+  <div class="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="saleDialog">
+    <form method="dialog" class="modal">
+      <h2>Record a sale</h2>
+      <p>It saves on this device first, so a weak connection cannot lose your work.</p>
+      <div class="field"><label for="customer">Customer</label><input id="customer" placeholder="Walk-in customer"></div>
+      <div class="field"><label for="amount">Amount (NPR)</label><input id="amount" inputmode="decimal" placeholder="0.00"></div>
+      <div class="modal-actions"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="save">Save sale</button></div>
+    </form>
+  </dialog>
+
+  <script>
+    const toast=document.querySelector('.toast');let toastTimer,offline=false,bs=true;
+    function say(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2600)}
+    document.addEventListener('click',event=>{
+      const button=event.target.closest('button');if(!button)return;
+      if(button.dataset.nav){document.querySelectorAll('[data-nav]').forEach(item=>item.classList.toggle('active',item.dataset.nav===button.dataset.nav));say(button.dataset.nav+' selected')}
+      const action=button.dataset.action;
+      if(action==='sale')document.querySelector('#saleDialog').showModal();
+      if(action==='offline'){offline=!offline;document.querySelector('#syncText').textContent=offline?'offline · 1 saved':'syncing…';document.querySelector('.dot').style.background=offline?'var(--warn)':'var(--lime)';say(offline?'Offline mode: your work will stay on this device.':'Connection restored. Sending one saved entry.');if(!offline)setTimeout(()=>document.querySelector('#syncText').textContent='all synced',1000)}
+      if(action==='date'){bs=!bs;button.innerHTML=bs?'<span>BS</span> · AD':'BS · <span>AD</span>';say(bs?'Bikram Sambat dates selected.':'Gregorian dates selected.')}
+      const copy={tenant:'Choose another business.',purchase:'Starting a purchase draft.',entries:'Opening all entries.',review:'Opening the bill review.',stock:'Opening low-stock items.'};if(copy[action])say(copy[action]);
+    });
+    document.querySelector('#saleDialog').addEventListener('close',event=>{if(event.target.returnValue==='save')say('Sale saved on this device. Waiting to confirm.')});
+  </script>
+</body>
+</html>

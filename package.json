@@ -1,0 +1,10 @@
+{
+  "name": "khata-refactor",
+  "private": true,
+  "packageManager": "pnpm@10.12.3",
+  "scripts": {
+    "type-check": "pnpm --dir apps/khata type-check",
+    "lint": "pnpm --dir apps/khata lint",
+    "test": "pnpm --dir apps/khata test --runInBand"
+  }
+}

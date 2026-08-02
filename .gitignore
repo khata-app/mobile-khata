@@ -1,0 +1,33 @@
+/graphify-out
+**/node_modules/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Expo / React Native
+.expo/
+.expo-shared/
+dist/
+web-build/
+android/.gradle/
+android/local.properties
+ios/Pods/
+ios/build/
+
+# Test and build output
+coverage/
+*.tsbuildinfo
+
+# Caches
+.cache/
+.parcel-cache/
+.turbo/
+
+# Editors and operating systems
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/

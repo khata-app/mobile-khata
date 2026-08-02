@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f6f5ef">
+  <title>Khata — Quiet Bold</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&family=Noto+Sans+Devanagari:wght@600;700&display=swap');
+    :root{
+      --ink:#17201b;--muted:#69736d;--line:#dfe3dc;--canvas:#f6f5ef;--paper:#fff;
+      --green:#175b3a;--deep:#0f3f2b;--lime:#c9f15a;--lime-soft:#eff9d4;
+      --amber:#b76b16;--amber-soft:#fff2db;--red:#b84435;--red-soft:#fff0ed;
+      --blue:#356d99;--blue-soft:#edf5fb;--radius:18px;--shadow:0 10px 30px rgba(23,32,27,.07);
+    }
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--canvas);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}button,input,select{font:inherit;color:inherit}button{cursor:pointer}.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.mono{font-family:"DM Mono",monospace}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--lime);outline-offset:2px}
+    .app{min-height:100vh;display:grid;grid-template-columns:232px minmax(0,1fr)}.sidebar{position:fixed;inset:0 auto 0 0;width:232px;padding:24px 16px;background:var(--deep);color:#fff;display:flex;flex-direction:column;z-index:30}.brand{height:48px;display:flex;align-items:center;gap:11px;padding:0 9px;margin-bottom:24px}.brand-mark{width:38px;height:38px;border-radius:12px;background:var(--lime);color:var(--deep);display:grid;place-items:center;font:700 18px "Noto Sans Devanagari",sans-serif}.brand strong{font-size:21px;letter-spacing:-.04em}.business{margin:0 4px 22px;padding:12px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.07)}.business small{display:block;color:#aebeb5;font-size:11px}.business b{display:flex;align-items:center;justify-content:space-between;margin-top:4px;font-size:13px}.nav{display:grid;gap:5px}.nav button{width:100%;height:48px;padding:0 13px;border:0;border-radius:12px;background:transparent;color:#b9c7bf;display:flex;align-items:center;gap:12px;text-align:left;font-weight:600}.nav button:hover{background:rgba(255,255,255,.07);color:#fff}.nav button.active{background:var(--lime);color:var(--deep)}.nav .pill{margin-left:auto;min-width:21px;height:21px;padding:0 6px;border-radius:99px;background:rgba(255,255,255,.13);display:grid;place-items:center;font-size:10px}.nav button.active .pill{background:var(--deep);color:#fff}.sidebar-foot{margin-top:auto;padding:13px 10px;color:#aebeb5;font-size:12px}.sync-dot{display:inline-block;width:8px;height:8px;border-radius:99px;background:var(--lime);margin-right:8px}.sidebar-foot small{display:block;margin:7px 0 0 16px;color:#82968a}
+    .workspace{grid-column:2;min-width:0}.topbar{height:72px;position:sticky;top:0;z-index:20;padding:0 34px;background:rgba(246,245,239,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px}.crumb{font-size:14px;color:var(--muted)}.crumb b{color:var(--ink)}.top-actions{margin-left:auto;display:flex;align-items:center;gap:9px}.icon-btn{width:42px;height:42px;border:1px solid var(--line);border-radius:12px;background:var(--paper);display:grid;place-items:center}.icon-btn.menu{display:none}.avatar{width:38px;height:38px;border-radius:12px;background:var(--lime-soft);color:var(--green);display:grid;place-items:center;font-weight:700;font-size:12px}.content{max-width:1300px;margin:auto;padding:32px 34px 90px}.view{display:none}.view.active{display:block}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:26px}.eyebrow{margin:0 0 7px;color:var(--green);font:500 11px "DM Mono",monospace;text-transform:uppercase;letter-spacing:.1em}.page-head h1{margin:0;font-size:clamp(30px,4vw,44px);line-height:1.05;letter-spacing:-.045em}.page-head p{margin:9px 0 0;color:var(--muted)}.actions{display:flex;gap:9px}.btn{min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700}.btn:hover{border-color:#b7bdb7}.btn.primary{background:var(--lime);border-color:var(--lime);color:var(--deep)}.btn.dark{background:var(--deep);border-color:var(--deep);color:#fff}.btn.subtle{background:transparent}.btn.small{min-height:36px;padding-inline:12px;font-size:12px}.btn:disabled{cursor:not-allowed;opacity:.45}
+    .summary-grid{display:grid;grid-template-columns:1.45fr repeat(2,1fr);gap:14px}.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}.cash-card{min-height:205px;padding:25px;background:var(--deep);color:#fff;position:relative;overflow:hidden}.cash-card:after{content:"ख";position:absolute;right:15px;bottom:-39px;font:700 150px "Noto Sans Devanagari";color:rgba(201,241,90,.09)}.label{color:var(--muted);font-size:12px;font-weight:600}.cash-card .label{color:#a8bdb1}.cash-card strong{display:block;margin:37px 0 9px;font-size:clamp(37px,5vw,55px);line-height:1;letter-spacing:-.05em}.cash-card small{color:#b8c9bf}.cash-card small b{color:var(--lime)}.metric{padding:22px;display:flex;flex-direction:column}.metric-icon{width:40px;height:40px;border-radius:12px;background:var(--lime-soft);color:var(--green);display:grid;place-items:center}.metric:nth-child(3) .metric-icon{background:var(--blue-soft);color:var(--blue)}.metric strong{font-size:28px;margin-top:auto;letter-spacing:-.04em}.metric p{margin:5px 0 0;color:var(--muted);font-size:12px}.metric p b{color:var(--green)}
+    .dash-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(260px,.75fr);gap:16px;margin-top:16px}.panel{padding:21px}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.panel-head h2{margin:0;font-size:17px;letter-spacing:-.02em}.link{border:0;background:transparent;color:var(--green);font-weight:700;font-size:12px}.transactions{display:grid}.transaction{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;align-items:center;padding:13px 0;border-top:1px solid var(--line)}.transaction:first-child{border-top:0}.t-icon{width:40px;height:40px;border-radius:12px;background:var(--lime-soft);color:var(--green);display:grid;place-items:center}.t-icon.out{background:var(--amber-soft);color:var(--amber)}.transaction strong,.transaction small{display:block}.transaction small{margin-top:3px;color:var(--muted);font-size:11px}.t-amount{text-align:right}.t-amount strong{font-size:13px}.status{display:inline-flex;align-items:center;gap:5px;margin-top:4px;padding:3px 7px;border-radius:99px;background:var(--lime-soft);color:var(--green);font-size:9px;font-weight:700;text-transform:uppercase}.status.wait{background:var(--amber-soft);color:var(--amber)}.task-list{display:grid;gap:10px}.task{padding:14px;border-radius:14px;background:#fafbf8;display:flex;align-items:flex-start;gap:11px}.task-icon{width:34px;height:34px;flex:0 0 auto;border-radius:10px;background:var(--amber-soft);color:var(--amber);display:grid;place-items:center}.task:nth-child(2) .task-icon{background:var(--red-soft);color:var(--red)}.task strong,.task small{display:block}.task small{margin-top:4px;color:var(--muted);line-height:1.35}.task button{margin-left:auto;border:0;background:transparent;color:var(--green)}
+    .ocr-layout{display:grid;grid-template-columns:minmax(310px,.85fr) minmax(440px,1.15fr);gap:18px}.document{padding:16px}.scan-stage{min-height:610px;border-radius:14px;background:#e8e8e2;display:grid;place-items:center;position:relative;overflow:hidden}.receipt{width:min(340px,76%);padding:30px 25px;background:#fffdf7;box-shadow:0 15px 40px rgba(0,0,0,.15);transform:rotate(-1deg);font-family:"DM Mono",monospace;font-size:11px;color:#454945}.receipt h3{text-align:center;font-size:15px}.receipt hr{border:0;border-top:1px dashed #777;margin:18px 0}.receipt-row{display:flex;justify-content:space-between;margin:11px 0}.scan-corners{position:absolute;inset:24px;border:2px solid rgba(23,91,58,.35);border-radius:18px;pointer-events:none}.zoom{position:absolute;right:14px;bottom:14px;display:flex;gap:6px}.review{padding:24px}.review-banner{padding:14px;border-radius:13px;background:var(--amber-soft);color:#72501d;display:flex;align-items:center;gap:10px;font-size:12px;margin-bottom:20px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field{display:grid;gap:7px}.field.full{grid-column:1/-1}.field label{font-size:11px;font-weight:700;color:var(--muted)}.control{height:46px;width:100%;padding:0 12px;border:1px solid var(--line);border-radius:11px;background:#fff}.control.warn{border-color:#dda951;background:#fffdfa}.confidence{font-size:9px;color:var(--green);float:right}.confidence.low{color:var(--amber)}.line-items{margin-top:24px}.line-table{border:1px solid var(--line);border-radius:13px;overflow:hidden}.line-row{display:grid;grid-template-columns:minmax(120px,1fr) 64px 100px 35px;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:12px}.line-row:first-child{border-top:0;background:#f6f7f3;color:var(--muted);font-size:10px;font-weight:700}.line-row input{width:100%;border:0;background:transparent;padding:5px}.remove{border:0;background:transparent;color:var(--muted)}.total-row{display:flex;justify-content:space-between;margin-top:18px;padding-top:17px;border-top:1px solid var(--line);font-weight:700}.review-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:22px}
+    .entry-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:18px}.entry-form{padding:24px}.type-switch{display:inline-grid;grid-template-columns:1fr 1fr;padding:4px;background:#eef0eb;border-radius:13px;margin-bottom:23px}.type-switch button{height:38px;padding:0 18px;border:0;border-radius:10px;background:transparent;font-weight:700;color:var(--muted)}.type-switch button.active{background:var(--paper);color:var(--green);box-shadow:0 2px 7px rgba(0,0,0,.08)}.form-section{padding:21px 0;border-top:1px solid var(--line)}.form-section:first-of-type{padding-top:0;border:0}.form-section h2{font-size:14px;margin:0 0 15px}.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}.items-table{border:1px solid var(--line);border-radius:14px;overflow:hidden}.item-row{display:grid;grid-template-columns:minmax(150px,1.5fr) 75px 100px 90px 36px;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}.item-row:first-child{border:0;background:#f6f7f3;color:var(--muted);font-size:10px;font-weight:700}.item-row input{width:100%;height:36px;padding:0 8px;border:1px solid transparent;border-radius:8px;background:transparent}.item-row input:focus{border-color:var(--green);outline:0;background:#fff}.summary{padding:22px;height:max-content;position:sticky;top:92px}.summary h2{font-size:16px;margin:0 0 20px}.sum-row{display:flex;justify-content:space-between;margin:13px 0;color:var(--muted);font-size:13px}.sum-row.total{padding-top:16px;border-top:1px solid var(--line);color:var(--ink);font-size:18px;font-weight:700}.balance-note{padding:12px;margin:17px 0;border-radius:12px;background:var(--lime-soft);color:var(--green);font-size:11px;line-height:1.45}.summary .btn{width:100%;margin-top:8px}
+    .toast{position:fixed;right:24px;bottom:24px;z-index:100;max-width:360px;padding:14px 17px;border-radius:13px;background:var(--deep);color:#fff;box-shadow:0 12px 30px rgba(0,0,0,.2);font-weight:600;font-size:13px;transform:translateY(20px);opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:none}.mobile-nav{display:none}
+    @media(max-width:1050px){.summary-grid{grid-template-columns:1.4fr 1fr}.metric:last-child{display:none}.ocr-layout{grid-template-columns:1fr}.scan-stage{min-height:450px}.entry-layout{grid-template-columns:1fr}.summary{position:static}.dash-grid{grid-template-columns:1fr}.task-list{grid-template-columns:1fr 1fr}}
+    @media(max-width:760px){body{padding-bottom:70px}.app{display:block}.sidebar{display:none}.workspace{display:block}.topbar{height:62px;padding:0 16px}.icon-btn.menu{display:grid}.content{padding:22px 16px 60px}.page-head{align-items:flex-start;margin-bottom:21px}.page-head .actions{display:none}.page-head h1{font-size:32px}.summary-grid{display:flex;overflow:auto;margin-inline:-16px;padding:0 16px 8px;scroll-snap-type:x mandatory}.summary-grid>*{min-width:84vw;scroll-snap-align:center}.metric:last-child{display:flex}.cash-card{min-height:190px}.dash-grid{margin-top:9px}.panel{padding:17px}.task-list{grid-template-columns:1fr}.transaction{grid-template-columns:40px minmax(0,1fr)}.t-amount{grid-column:2;text-align:left}.ocr-layout{display:block}.document{padding:8px;margin-bottom:12px}.scan-stage{min-height:340px}.receipt{padding:19px 16px}.review{padding:18px}.fields,.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.line-table,.items-table{overflow-x:auto}.line-row{min-width:530px}.item-row{min-width:620px}.entry-form{padding:18px}.type-switch{width:100%}.summary{padding:18px}.review-actions{display:grid;grid-template-columns:1fr}.mobile-nav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;inset:auto 0 0;z-index:50;padding:5px 6px max(5px,env(safe-area-inset-bottom));background:rgba(255,255,255,.96);border-top:1px solid var(--line);backdrop-filter:blur(12px)}.mobile-nav button{height:56px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-size:10px;font-weight:700}.mobile-nav button .icon{display:block;margin:0 auto 4px}.mobile-nav button.active{background:var(--lime-soft);color:var(--green)}.toast{right:16px;left:16px;bottom:82px;text-align:center}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute"><defs>
+    <symbol id="home" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10M9 20v-6h6v6"/></symbol>
+    <symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10M8 9h8M9 15h6"/></symbol>
+    <symbol id="receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
+    <symbol id="box" viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4zM4 7v10l8 4 8-4V7M12 11v10"/></symbol>
+    <symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+    <symbol id="arrowup" viewBox="0 0 24 24"><path d="m7 17 10-10M8 7h9v9"/></symbol>
+    <symbol id="arrowdown" viewBox="0 0 24 24"><path d="m7 7 10 10M7 16v-9h9"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></symbol>
+    <symbol id="menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h4l2-3h4l2 3h4v13H4z"/><circle cx="12" cy="13" r="4"/></symbol>
+  </defs></svg>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">ख</div><strong>khata</strong></div>
+      <div class="business"><small>Working in</small><b>Himalayan Stores <span>⌄</span></b></div>
+      <nav class="nav">
+        <button class="active" data-view="dashboard"><svg class="icon"><use href="#home"/></svg>Dashboard</button>
+        <button data-view="ocr"><svg class="icon"><use href="#scan"/></svg>Scan bills <span class="pill">2</span></button>
+        <button data-view="entry" data-type="sale"><svg class="icon"><use href="#receipt"/></svg>Sales</button>
+        <button data-view="entry" data-type="purchase"><svg class="icon"><use href="#arrowdown"/></svg>Purchases</button>
+        <button data-demo="inventory"><svg class="icon"><use href="#box"/></svg>Inventory <span class="pill">6</span></button>
+        <button data-demo="reports"><svg class="icon"><use href="#chart"/></svg>Reports</button>
+      </nav>
+      <div class="sidebar-foot"><span class="sync-dot"></span><b id="syncLabel">All changes synced</b><small>Last sync just now</small></div>
+    </aside>
+    <section class="workspace">
+      <header class="topbar">
+        <button class="icon-btn menu" aria-label="Open menu" data-demo="menu"><svg class="icon"><use href="#menu"/></svg></button>
+        <div class="crumb">FY 2082/83 &nbsp;/&nbsp; <b id="crumb">Dashboard</b></div>
+        <div class="top-actions"><button class="icon-btn" aria-label="Notifications" data-demo="notifications"><svg class="icon"><use href="#bell"/></svg></button><div class="avatar">AS</div></div>
+      </header>
+      <main class="content">
+        <section class="view active" id="dashboard">
+          <div class="page-head"><div><p class="eyebrow">08 Shrawan 2083 · बिहीबार</p><h1>Good morning, Anil.</h1><p>Here’s what needs your attention today.</p></div><div class="actions"><button class="btn" data-view="ocr"><svg class="icon"><use href="#camera"/></svg>Scan bill</button><button class="btn primary" data-view="entry" data-type="sale"><svg class="icon"><use href="#plus"/></svg>New sale</button></div></div>
+          <section class="summary-grid">
+            <article class="card cash-card"><span class="label">Confirmed cash balance</span><strong>रु 84,250</strong><small>Updated 10:42 · <b>Books balanced</b></small></article>
+            <article class="card metric"><span class="metric-icon"><svg class="icon"><use href="#arrowup"/></svg></span><strong>रु 24,500</strong><span class="label">Sales today</span><p><b>+12%</b> from yesterday</p></article>
+            <article class="card metric"><span class="metric-icon"><svg class="icon"><use href="#arrowdown"/></svg></span><strong>रु 8,750</strong><span class="label">Purchases today</span><p>3 bills posted</p></article>
+          </section>
+          <div class="dash-grid">
+            <section class="card panel"><div class="panel-head"><h2>Recent activity</h2><button class="link" data-demo="entries">View all</button></div><div class="transactions">
+              <article class="transaction"><span class="t-icon"><svg class="icon"><use href="#arrowup"/></svg></span><div><strong>Ramesh Mart</strong><small>Sale · SAL-0148 · 10:38</small></div><div class="t-amount"><strong>+ रु 8,500</strong><span class="status">Confirmed</span></div></article>
+              <article class="transaction"><span class="t-icon"><svg class="icon"><use href="#arrowup"/></svg></span><div><strong>Walk-in customer</strong><small>Sale · Local draft · 10:31</small></div><div class="t-amount"><strong>+ रु 2,900</strong><span class="status wait">Waiting to sync</span></div></article>
+              <article class="transaction"><span class="t-icon out"><svg class="icon"><use href="#arrowdown"/></svg></span><div><strong>Nepal Paper Supply</strong><small>Purchase · PUR-0082 · 09:52</small></div><div class="t-amount"><strong>− रु 8,750</strong><span class="status">Confirmed</span></div></article>
+            </div></section>
+            <aside class="card panel"><div class="panel-head"><h2>Needs attention</h2></div><div class="task-list">
+              <article class="task"><span class="task-icon"><svg class="icon"><use href="#scan"/></svg></span><div><strong>2 bills to review</strong><small>Check extracted fields before posting.</small></div><button aria-label="Review bills" data-view="ocr">→</button></article>
+              <article class="task"><span class="task-icon"><svg class="icon"><use href="#box"/></svg></span><div><strong>6 low-stock items</strong><small>2 may run out this week.</small></div><button aria-label="View stock" data-demo="inventory">→</button></article>
+            </div></aside>
+          </div>
+        </section>
+
+        <section class="view" id="ocr">
+          <div class="page-head"><div><p class="eyebrow">OCR review · 1 of 2</p><h1>Check this purchase bill.</h1><p>AI suggestions stay as a draft until you approve them.</p></div><div class="actions"><button class="btn" data-demo="replace"><svg class="icon"><use href="#camera"/></svg>Replace image</button></div></div>
+          <div class="ocr-layout">
+            <section class="card document"><div class="scan-stage"><div class="scan-corners"></div><div class="receipt"><h3>SHREE DISTRIBUTORS</h3><div style="text-align:center">PAN: 602938475<br>KATHMANDU, NEPAL</div><hr><div>Invoice: SD-1882<br>Date: 2083/04/08</div><hr><div class="receipt-row"><span>Cooking Oil × 5</span><b>9,500</b></div><div class="receipt-row"><span>Rice 25kg × 2</span><b>6,000</b></div><div class="receipt-row"><span>VAT 13%</span><b>2,015</b></div><hr><div class="receipt-row"><b>TOTAL</b><b>17,515</b></div></div><div class="zoom"><button class="icon-btn" data-demo="zoomout">−</button><button class="icon-btn" data-demo="zoomin">＋</button></div></div></section>
+            <section class="card review"><div class="review-banner"><svg class="icon"><use href="#scan"/></svg><b>3 fields need a quick check</b><span>Low-confidence suggestions are highlighted.</span></div>
+              <div class="fields">
+                <div class="field full"><label>Supplier <span class="confidence">98% confident</span></label><input class="control" value="Shree Distributors"></div>
+                <div class="field"><label>Invoice number <span class="confidence">96%</span></label><input class="control" value="SD-1882"></div>
+                <div class="field"><label>Bill date <span class="confidence low">62% · check</span></label><input class="control warn" value="2083/04/08"></div>
+                <div class="field"><label>Supplier PAN <span class="confidence low">71% · check</span></label><input class="control warn" value="602938475"></div>
+                <div class="field"><label>Payment type</label><select class="control"><option>Credit</option><option>Cash</option><option>Bank</option></select></div>
+              </div>
+              <div class="line-items"><div class="panel-head"><h2>Items</h2><button class="link add-ocr">+ Add item</button></div><div class="line-table" id="ocrLines"><div class="line-row"><span>Item</span><span>Qty</span><span>Amount</span><span></span></div><div class="line-row"><input value="Cooking oil"><input value="5"><input value="9,500"><button class="remove">×</button></div><div class="line-row"><input value="Rice 25kg"><input value="2"><input value="6,000"><button class="remove">×</button></div></div></div>
+              <div class="total-row"><span>Total including VAT</span><span>रु 17,515</span></div><div class="review-actions"><button class="btn" data-demo="draft">Save draft</button><button class="btn dark" id="approve"><svg class="icon"><use href="#check"/></svg>Approve & post purchase</button></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="entry">
+          <div class="page-head"><div><p class="eyebrow">Quick entry · नयाँ कारोबार</p><h1 id="entryTitle">Create a sales bill.</h1><p id="entrySubtitle">Record items, payment, and customer details in one place.</p></div><div class="actions"><button class="btn" data-demo="draft">Save draft</button></div></div>
+          <div class="entry-layout">
+            <section class="card entry-form">
+              <div class="type-switch"><button class="active" data-type-switch="sale">Sales bill</button><button data-type-switch="purchase">Purchase bill</button></div>
+              <div class="form-section"><h2 id="partyHeading">Customer details</h2><div class="form-grid"><div class="field"><label id="partyLabel">Customer</label><select class="control"><option>Walk-in customer</option><option>Ramesh Mart</option><option>New customer…</option></select></div><div class="field"><label>Bill date</label><input class="control" type="date" value="2026-07-23"></div><div class="field"><label>Reference</label><input class="control" value="Auto-generated" disabled></div><div class="field"><label>Payment</label><select class="control"><option>Cash</option><option>Credit</option><option>Bank transfer</option></select></div></div></div>
+              <div class="form-section"><div class="panel-head"><h2>Bill items</h2><button class="link" id="addItem">+ Add row</button></div><div class="items-table" id="items"><div class="item-row"><span>Item</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span></div><div class="item-row"><input value="Cooking oil 1L"><input value="2" inputmode="decimal"><input value="475" inputmode="decimal"><input value="950" inputmode="decimal"><button class="remove" aria-label="Remove item"><svg class="icon"><use href="#trash"/></svg></button></div><div class="item-row"><input placeholder="Search item…"><input value="1"><input value="0"><input value="0"><button class="remove"><svg class="icon"><use href="#trash"/></svg></button></div></div></div>
+              <div class="form-section"><h2>Notes</h2><input class="control" placeholder="Optional note shown on the bill"></div>
+            </section>
+            <aside class="card summary"><h2>Bill summary</h2><div class="sum-row"><span>Subtotal</span><b>रु 950</b></div><div class="sum-row"><span>Discount</span><b>रु 0</b></div><div class="sum-row"><span>VAT (13%)</span><b>रु 123.50</b></div><div class="sum-row total"><span>Total</span><b>रु 1,073.50</b></div><div class="balance-note"><b>Balanced entry</b><br>This bill will create matching ledger lines and update stock after posting.</div><button class="btn primary" id="postBill">Post sales bill</button><button class="btn" data-demo="preview">Preview bill</button></aside>
+          </div>
+        </section>
+      </main>
+    </section>
+  </div>
+  <nav class="mobile-nav"><button class="active" data-view="dashboard"><svg class="icon"><use href="#home"/></svg>Home</button><button data-view="ocr"><svg class="icon"><use href="#scan"/></svg>Scan</button><button data-view="entry" data-type="sale"><svg class="icon"><use href="#plus"/></svg>New bill</button><button data-demo="more"><svg class="icon"><use href="#more"/></svg>More</button></nav>
+  <div class="toast" role="status" aria-live="polite"></div>
+  <script>
+    const names={dashboard:"Dashboard",ocr:"Bill review",entry:"New bill"};let currentType="sale",toastTimer;
+    const toast=message=>{const el=document.querySelector(".toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2600)};
+    function openView(id,type){
+      if(type)setType(type);
+      document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));
+      document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===id&&(!b.dataset.type||b.dataset.type===type)));
+      document.querySelector("#crumb").textContent=names[id];scrollTo({top:0,behavior:"smooth"});
+    }
+    function setType(type){
+      currentType=type;const purchase=type==="purchase";
+      document.querySelectorAll("[data-type-switch]").forEach(b=>b.classList.toggle("active",b.dataset.typeSwitch===type));
+      document.querySelector("#entryTitle").textContent=purchase?"Create a purchase bill.":"Create a sales bill.";
+      document.querySelector("#entrySubtitle").textContent=purchase?"Record supplier items and update stock after posting.":"Record items, payment, and customer details in one place.";
+      document.querySelector("#partyHeading").textContent=purchase?"Supplier details":"Customer details";
+      document.querySelector("#partyLabel").textContent=purchase?"Supplier":"Customer";
+      document.querySelector("#postBill").textContent=purchase?"Post purchase bill":"Post sales bill";
+    }
+    document.addEventListener("click",e=>{
+      const view=e.target.closest("[data-view]");if(view){openView(view.dataset.view,view.dataset.type);return}
+      const type=e.target.closest("[data-type-switch]");if(type){setType(type.dataset.typeSwitch);return}
+      const remove=e.target.closest(".remove");if(remove&&remove.closest(".line-row,.item-row")){remove.closest(".line-row,.item-row").remove();toast("Item removed.");return}
+      const demo=e.target.closest("[data-demo]");if(demo){const copy={inventory:"Inventory preview opened.",reports:"Reports preview opened.",entries:"All activity opened.",notifications:"You have 2 bills waiting for review.",replace:"Choose a new bill image.",zoomout:"Document zoomed out.",zoomin:"Document zoomed in.",draft:"Draft saved safely on this device.",preview:"Bill preview ready.",menu:"Navigation is available below on phone.",more:"More tools opened."};toast(copy[demo.dataset.demo]||"Demo action complete.");}
+    });
+    document.querySelector("#addItem").onclick=()=>{document.querySelector("#items").insertAdjacentHTML("beforeend",'<div class="item-row"><input placeholder="Search item…"><input value="1"><input value="0"><input value="0"><button class="remove"><svg class="icon"><use href="#trash"/></svg></button></div>');toast("New item row added.")};
+    document.querySelector(".add-ocr").onclick=()=>{document.querySelector("#ocrLines").insertAdjacentHTML("beforeend",'<div class="line-row"><input placeholder="Item name"><input value="1"><input value="0"><button class="remove">×</button></div>');toast("New OCR item added.")};
+    document.querySelector("#approve").onclick=()=>{toast("Purchase posted. Stock and ledgers are updated.");setTimeout(()=>openView("dashboard"),900)};
+    document.querySelector("#postBill").onclick=()=>{toast((currentType==="purchase"?"Purchase":"Sale")+" posted and saved to the ledger.");setTimeout(()=>openView("dashboard"),900)};
+  </script>
+</body>
+</html>
