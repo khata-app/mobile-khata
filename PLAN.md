@@ -198,12 +198,17 @@ Completed in the current pass (2026-08-02):
 - Replaced generic Obytes Settings content with Khata business profile, team, sync, fiscal-year, language/theme, and sign-out entry points.
 - Removed the starter Feed/Create header affordance from the authenticated tab shell.
 - Added the Reports route to the Expo Router app group so the visible output is fully React Native/React Native Web.
+- Replaced the starter tab shell with a reference-parity adaptive workspace: desktop sidebar plus mobile navigation, Khata palette, company context, and matching information hierarchy.
+- Added company setup onboarding with Business, Finance, and Security steps, plus a switchable local tenant context.
+- Added local-first working flows for purchases/OCR review, saved bills, sales invoices, sales, inventory CRUD, expenses, employees, benefits, dashboard metrics, reports, settings, and workspace persistence.
+- Removed the reachable starter Feed/Create and style-demo routes; the authenticated navigation now exposes the accounting workspace modules.
 
 Remaining product work after the visible MVP shell:
 
-- Wire dashboard cards/actions to local repositories and server commands; current values are presentation fixtures pending tenant/bootstrap data.
-- Replace Reports and Settings starter routes with ledger, trial balance, P&L, balance sheet, VAT, stock, profile, tenant switching, and sync-status screens.
-- Add WatermelonDB persistence, sync, contacts, inventory, sales, purchases, expenses, OCR review, exports, migration tooling, and release CI.
+- Replace the local-first repository boundary with the planned WatermelonDB schema, durable outbox, sync protocol, and tenant bootstrap Edge Functions.
+- Connect company creation/switching, inventory, sales, purchases, expenses, employee benefits, OCR review, reports, and exports to Supabase commands with server-side accounting invariants.
+- Add real file capture/storage and OCR jobs; the current purchase scanner deliberately provides the review surface and local demo extraction without auto-posting.
+- Finish contacts, invitations, role permissions, fiscal locks, reversals, migration tooling, adversarial RLS tests, and release CI.
 
 ### 4.2 Proposed monorepo
 

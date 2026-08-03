@@ -16,7 +16,7 @@ export function LoginScreen() {
       : await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
     const { error } = result;
     if (error) throw error;
-    router.replace('/');
+    router.replace('/company');
   };
 
   return (

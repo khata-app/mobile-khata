@@ -1,16 +1,11 @@
-import { Redirect, SplashScreen, Tabs } from 'expo-router';
+import { Redirect, SplashScreen, Stack } from 'expo-router';
 import * as React from 'react';
 import { useCallback, useEffect } from 'react';
 
-import {
-  Home as FeedIcon,
-  Settings as SettingsIcon,
-  Style as StyleIcon,
-} from '@/components/ui/icons';
 import { useAuthStore as useAuth } from '@/features/auth/use-auth-store';
 import { useIsFirstTime } from '@/lib/hooks/use-is-first-time';
 
-export default function TabLayout() {
+export default function AppLayout() {
   const status = useAuth.use.status();
   const [isFirstTime] = useIsFirstTime();
   const hideSplash = useCallback(async () => {
@@ -31,35 +26,9 @@ export default function TabLayout() {
   if (status === 'signOut') {
     return <Redirect href="/login" />;
   }
-  return (
-    <Tabs>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Overview',
-          tabBarIcon: ({ color }) => <FeedIcon color={color} />,
-          tabBarButtonTestID: 'feed-tab',
-        }}
-      />
-
-      <Tabs.Screen
-        name="reports"
-        options={{
-          title: 'Reports',
-          headerShown: false,
-          tabBarIcon: ({ color }) => <StyleIcon color={color} />,
-          tabBarButtonTestID: 'reports-tab',
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          headerShown: false,
-          tabBarIcon: ({ color }) => <SettingsIcon color={color} />,
-          tabBarButtonTestID: 'settings-tab',
-        }}
-      />
-    </Tabs>
-  );
+  return <Stack screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="index" />
+    <Stack.Screen name="reports" />
+    <Stack.Screen name="settings" />
+  </Stack>;
 }
