@@ -21,7 +21,7 @@ const button = tv({
       },
       secondary: {
         container: 'bg-primary-600',
-        label: 'text-secondary-600',
+        label: 'text-white',
         indicator: 'text-white',
       },
       outline: {

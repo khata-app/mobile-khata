@@ -7,7 +7,7 @@
     "pnpm": "10.12.3"
   },
   "scripts": {
-    "dev": "pnpm run web",
+    "dev": "pnpm web",
     "web": "pnpm --dir apps web",
     "mobile": "pnpm --dir apps android",
     "type-check": "pnpm --dir apps type-check",

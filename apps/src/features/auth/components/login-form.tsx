@@ -1,20 +1,221 @@
 import { useForm } from '@tanstack/react-form';
 import * as React from 'react';
-import { KeyboardAvoidingView, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import * as z from 'zod';
-import { Button, Input, Text } from '@/components/ui';
-import { C, Chip } from '@/features/khata/ui';
+import { Button, Input } from '@/components/ui';
 import { getFieldError } from '@/components/ui/form-utils';
+import { C, SERIF, Text, ruledPaper } from '@/features/khata/ui';
+import { EyeIcon, EyeOffIcon, KhataMark, LockIcon, MailIcon, UserIcon } from '@/features/khata/icons';
 
-const schema = z.object({ name: z.string().optional(), email: z.string().min(1, 'Email is required').email('Invalid email format'), password: z.string().min(6, 'Password must be at least 6 characters') });
+const schema = z.object({
+  name: z.string().optional(),
+  email: z.string().min(1, 'Email is required').email('Invalid email format'),
+  password: z.string().min(1, 'Password is required').min(6, 'Password must be at least 6 characters'),
+});
+
 export type FormType = z.infer<typeof schema>;
 export type LoginFormProps = { onSubmit?: (data: FormType) => void; mode?: 'login' | 'register'; onModeChange?: (mode: 'login' | 'register') => void };
 
 export function LoginForm({ onSubmit = () => {}, mode = 'login', onModeChange }: LoginFormProps) {
-  const form = useForm({ defaultValues: { name: '', email: '', password: '' }, validators: { onChange: schema as any }, onSubmit: async ({ value }) => { onSubmit(value); } });
+  const form = useForm({
+    defaultValues: { name: '', email: '', password: '' },
+    validators: { onChange: schema as any },
+    onSubmit: async ({ value }) => { onSubmit(value); },
+  });
   const register = mode === 'register';
-  return <KeyboardAvoidingView style={styles.safe} behavior="padding"><View style={styles.center}><Chip tone="gold">Secure workspace access</Chip><Text testID="form-title" style={styles.title}>{register ? 'Create your Khata account' : 'Login to Khata'}</Text><Text style={styles.subtitle}>Role-based accounting access for admins, accountants, and employees.</Text><View style={styles.card}>{register && <form.Field name="name" children={field => <Input testID="name" label="Full name" value={field.state.value} onBlur={field.handleBlur} onChangeText={field.handleChange} error={getFieldError(field)} />} />}<form.Field name="email" children={field => <Input testID="email-input" label="Email" value={field.state.value} onBlur={field.handleBlur} onChangeText={field.handleChange} error={getFieldError(field)} />} /><form.Field name="password" children={field => <Input testID="password-input" label="Password" placeholder="At least 6 characters" secureTextEntry value={field.state.value} onBlur={field.handleBlur} onChangeText={field.handleChange} error={getFieldError(field)} />} /><form.Subscribe selector={state => [state.isSubmitting]} children={([isSubmitting]) => <Button variant="secondary" testID="login-button" label={register ? 'Create account' : 'Login'} onPress={form.handleSubmit} loading={isSubmitting} />} /><Pressable onPress={() => onModeChange?.(register ? 'login' : 'register')}><Text style={styles.switch}>{register ? 'Already have an account? Login' : 'New workspace? Register first admin'}</Text></Pressable></View></View></KeyboardAvoidingView>;
+  const [showPassword, setShowPassword] = React.useState(false);
+
+  return (
+    <KeyboardAvoidingView
+      style={[styles.safe, ruledPaper]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
+          <View style={styles.brandRow}>
+            <View style={styles.logo}>
+              <KhataMark size={26} color={C.white} />
+            </View>
+            <View>
+              <Text style={styles.brandName}>Khata</Text>
+              <Text style={styles.brandTag}>Nepal accounting workspace</Text>
+            </View>
+          </View>
+
+          <ChipRow />
+
+          <Text testID="form-title" style={styles.title}>
+            {register ? 'Open your ledger' : 'Sign in to your ledger'}
+          </Text>
+          <Text style={styles.subtitle}>
+            {register
+              ? 'Register the first admin to start a private, offline-first accounting workspace.'
+              : 'Role-based accounting access for admins, accountants, and employees.'}
+          </Text>
+
+          <View style={styles.card}>
+            {register && (
+              <form.Field name="name" children={field => (
+                <Input
+                  testID="name"
+                  label="Full name"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChangeText={field.handleChange}
+                  error={getFieldError(field)}
+                  placeholder="Your name"
+                  leftIcon={<UserIcon size={18} color={C.muted} />}
+                />
+              )} />
+            )}
+
+            <form.Field name="email" children={field => (
+              <Input
+                testID="email-input"
+                label="Email address"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChangeText={field.handleChange}
+                error={getFieldError(field)}
+                placeholder="you@company.com"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+                leftIcon={<MailIcon size={18} color={C.muted} />}
+              />
+            )} />
+
+            <form.Field name="password" children={field => (
+              <Input
+                testID="password-input"
+                label="Password"
+                placeholder="At least 6 characters"
+                secureTextEntry={!showPassword}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChangeText={field.handleChange}
+                error={getFieldError(field)}
+                autoComplete="current-password"
+                leftIcon={<LockIcon size={18} color={C.muted} />}
+                rightIcon={(
+                  <Pressable
+                    testID="toggle-password"
+                    onPress={() => setShowPassword(current => !current)}
+                    hitSlop={8}
+                  >
+                    {showPassword
+                      ? <EyeOffIcon size={18} color={C.muted} />
+                      : <EyeIcon size={18} color={C.muted} />}
+                  </Pressable>
+                )}
+              />
+            )} />
+
+            <form.Subscribe selector={state => [state.isSubmitting]} children={([isSubmitting]) => (
+              <View style={styles.submitWrap}>
+                <Button
+                  variant="secondary"
+                  testID="login-button"
+                  label={register ? 'Create account' : 'Sign in'}
+                  onPress={form.handleSubmit}
+                  loading={isSubmitting}
+                />
+              </View>
+            )} />
+
+            <Pressable
+              onPress={() => onModeChange?.(register ? 'login' : 'register')}
+              style={({ pressed }) => [styles.switchLink, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.switch}>
+                {register ? 'Already have an account? Sign in' : 'New workspace? Register first admin'}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.footnote}>
+            <LockIcon size={12} color={C.muted} />
+            <Text style={styles.footnoteText}>Your data stays private and works offline</Text>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 }
 
-const styles = StyleSheet.create({ safe: { flex: 1, backgroundColor: C.cream }, center: { width: '100%', maxWidth: 460, alignSelf: 'center', justifyContent: 'center', flex: 1, padding: 24, alignItems: 'center', gap: 12 }, title: { color: C.ink, fontSize: 30, fontWeight: '800', textAlign: 'center', marginTop: 6 }, subtitle: { color: C.muted, fontSize: 13, lineHeight: 20, textAlign: 'center', maxWidth: 360 }, card: { width: '100%', backgroundColor: 'rgba(255,255,255,.9)', borderColor: C.border, borderWidth: 1, borderRadius: 18, padding: 18, gap: 4, marginTop: 8, shadowColor: '#7A4F31', shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 3 }, switch: { color: C.brick, fontWeight: '700', fontSize: 12, textAlign: 'center', paddingVertical: 8 },
+function ChipRow() {
+  return (
+    <View style={styles.chip}>
+      <LockIcon size={13} color={C.goldDark} />
+      <Text style={styles.chipText}>Secure workspace access</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.cream },
+  scroll: { flexGrow: 1, justifyContent: 'center' },
+  content: {
+    width: '100%',
+    maxWidth: 440,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    alignItems: 'center',
+    gap: 12,
+  },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  logo: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.brick,
+    shadowColor: C.brickDark,
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+  brandName: { color: C.ink, fontSize: 24, fontWeight: '800', fontFamily: SERIF, letterSpacing: -0.3 },
+  brandTag: { color: C.muted, fontSize: 11, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.6 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: C.yellowLight,
+    borderColor: '#E0C88F',
+    borderWidth: 1,
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 10,
+  },
+  chipText: { color: C.goldDark, fontSize: 11, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
+  title: { color: C.ink, fontSize: 32, lineHeight: 38, fontWeight: '800', fontFamily: SERIF, textAlign: 'center', marginTop: 4, letterSpacing: -0.5 },
+  subtitle: { color: C.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 360 },
+  card: {
+    width: '100%',
+    backgroundColor: 'rgba(253,248,238,0.95)',
+    borderColor: C.border,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 20,
+    gap: 6,
+    marginTop: 10,
+    shadowColor: C.brickDark,
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+  },
+  submitWrap: { marginTop: 8 },
+  switchLink: { paddingVertical: 10 },
+  switch: { color: C.brick, fontWeight: '800', fontSize: 13, textAlign: 'center' },
+  footnote: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  footnoteText: { color: C.muted, fontSize: 11, fontWeight: '600' },
 });

@@ -24,16 +24,16 @@ Copy `apps/khata/.env.example` to the environment file expected by your local se
 The web app always uses port `9999`:
 
 ```bash
-pnpm run web
+pnpm web
 ```
 
 Run the Android native app with:
 
 ```bash
-pnpm run mobile
+pnpm mobile
 ```
 
-`pnpm run dev` is an alias for the web app. The equivalent commands from inside `apps/` are `pnpm run web` and `pnpm run android`.
+`pnpm dev` is an alias for the web app. The equivalent commands from inside `apps/` are `pnpm web` and `pnpm android`.
 
 ## Quality checks
 
