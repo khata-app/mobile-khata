@@ -42,6 +42,14 @@ export function ChevronRightIcon(props: IconProps) {
   return <Icon {...props}><Polyline points="9 18 15 12 9 6" /></Icon>;
 }
 
+export function ChevronLeftIcon(props: IconProps) {
+  return <Icon {...props}><Polyline points="15 18 9 12 15 6" /></Icon>;
+}
+
+export function CaretDownIcon(props: IconProps) {
+  return <Icon {...props}><Polyline points="6 9 12 15 18 9" /></Icon>;
+}
+
 export function ArrowRightIcon(props: IconProps) {
   return <Icon {...props}><Line x1="5" y1="12" x2="19" y2="12" /><Polyline points="12 5 19 12 12 19" /></Icon>;
 }

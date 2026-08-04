@@ -5,7 +5,17 @@ import * as z from 'zod';
 import { Button, Input } from '@/components/ui';
 import { getFieldError } from '@/components/ui/form-utils';
 import { C, SERIF, Text, ruledPaper } from '@/features/khata/ui';
-import { EyeIcon, EyeOffIcon, KhataMark, LockIcon, MailIcon, UserIcon } from '@/features/khata/icons';
+import { AlertTriangleIcon, EyeIcon, EyeOffIcon, KhataMark, LockIcon, MailIcon, UserIcon } from '@/features/khata/icons';
+
+const getErrorMessage = (error: unknown) => {
+  if (!error) return 'Something went wrong. Please try again.';
+  const message = error instanceof Error ? error.message : String(error);
+  if (/invalid login credentials/i.test(message)) return 'Incorrect email or password. Please try again.';
+  if (/already registered/i.test(message)) return 'An account already exists for this email. Please sign in instead.';
+  if (/rate limit/i.test(message)) return 'Too many attempts. Please wait a moment and try again.';
+  if (/network|fetch|failed/i.test(message)) return 'Could not reach the server. Check your connection and try again.';
+  return message;
+};
 
 const schema = z.object({
   name: z.string().optional(),
@@ -14,16 +24,24 @@ const schema = z.object({
 });
 
 export type FormType = z.infer<typeof schema>;
-export type LoginFormProps = { onSubmit?: (data: FormType) => void; mode?: 'login' | 'register'; onModeChange?: (mode: 'login' | 'register') => void };
+export type LoginFormProps = { onSubmit?: (data: FormType) => void | Promise<void>; mode?: 'login' | 'register'; onModeChange?: (mode: 'login' | 'register') => void };
 
-export function LoginForm({ onSubmit = () => {}, mode = 'login', onModeChange }: LoginFormProps) {
+export function LoginForm({ onSubmit = async () => {}, mode = 'login', onModeChange }: LoginFormProps) {
   const form = useForm({
     defaultValues: { name: '', email: '', password: '' },
     validators: { onChange: schema as any },
-    onSubmit: async ({ value }) => { onSubmit(value); },
+    onSubmit: async ({ value }) => {
+      setFormError(null);
+      try {
+        await onSubmit(value);
+      } catch (error) {
+        setFormError(getErrorMessage(error));
+      }
+    },
   });
   const register = mode === 'register';
   const [showPassword, setShowPassword] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
 
   return (
     <KeyboardAvoidingView
@@ -136,6 +154,13 @@ export function LoginForm({ onSubmit = () => {}, mode = 'login', onModeChange }:
             </Pressable>
           </View>
 
+          {formError && (
+            <View style={styles.errorBox}>
+              <AlertTriangleIcon size={14} color={C.red} />
+              <Text style={styles.errorText}>{formError}</Text>
+            </View>
+          )}
+
           <View style={styles.footnote}>
             <LockIcon size={12} color={C.muted} />
             <Text style={styles.footnoteText}>Your data stays private and works offline</Text>
@@ -216,6 +241,8 @@ const styles = StyleSheet.create({
   submitWrap: { marginTop: 8 },
   switchLink: { paddingVertical: 10 },
   switch: { color: C.brick, fontWeight: '800', fontSize: 13, textAlign: 'center' },
+  errorBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, width: '100%', backgroundColor: C.redLight, borderColor: '#DFB4A4', borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 10 },
+  errorText: { color: C.red, fontSize: 12, fontWeight: '700', lineHeight: 18, flex: 1 },
   footnote: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   footnoteText: { color: C.muted, fontSize: 11, fontWeight: '600' },
 });
