@@ -6,7 +6,7 @@ These rules apply to contributors and coding agents working in this repository.
 
 - Use pnpm from the repository root. Keep the workspace on the pinned version in `package.json`.
 - Treat `apps/` as the Expo workspace package; do not introduce an `apps/khata/` path unless the workspace is intentionally restructured.
-- Run the web app with `pnpm run web` (port 9999) and Android with `pnpm run mobile`.
+- Run the web app with `pnpm web` (port 9999) and Android with `pnpm mobile`.
 - Prefer existing shared components, hooks, contracts, and utilities over duplicating behavior.
 - Keep business logic platform-neutral where possible; isolate native APIs behind small adapters.
 - Use strict TypeScript types. Avoid `any`, non-null assertions, and unsafe casts unless there is a documented reason.
@@ -29,7 +29,7 @@ pnpm run type-check
 pnpm run test
 ```
 
-For UI or native changes, also smoke-test the affected flow with `pnpm run web` or `pnpm run mobile`.
+For UI or native changes, also smoke-test the affected flow with `pnpm web` or `pnpm mobile`.
 
 ## Git hygiene
 

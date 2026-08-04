@@ -3,25 +3,25 @@
 
 @theme {
   --font-family-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --color-background: #F6EEE1;
-  --color-foreground: #3A2C1E;
-  --color-card: #FFFFFF;
-  --color-card-foreground: #3A2C1E;
-  --color-muted: #FAF6EF;
-  --color-muted-foreground: #97806A;
-  --color-border: #E5D5BE;
-  --color-input: #E5D5BE;
+  --color-background: #F3E9D8;
+  --color-foreground: #2C2115;
+  --color-card: #FDF8EE;
+  --color-card-foreground: #2C2115;
+  --color-muted: #FAF3E5;
+  --color-muted-foreground: #8A7257;
+  --color-border: #DCC9A8;
+  --color-input: #DCC9A8;
   --color-ring: #8D3117;
-  --color-primary-50: #FBEAE4;
+  --color-primary-50: #F6E4DC;
   --color-primary-100: #E8C4B4;
   --color-primary-500: #8D3117;
-  --color-primary-600: #692411;
-  --color-success-50: #EAF0E5;
-  --color-success-600: #6E8F5E;
-  --color-warning-50: #FBF3E1;
-  --color-warning-600: #C9A24B;
-  --color-danger-50: #FBEAE4;
-  --color-danger-600: #B5563C;
+  --color-primary-600: #6E2612;
+  --color-success-50: #E7EDDF;
+  --color-success-600: #5F7A4E;
+  --color-warning-50: #F6E9C8;
+  --color-warning-600: #B98A2F;
+  --color-danger-50: #F6E4DC;
+  --color-danger-600: #A64B33;
 }
 
 @layer utilities {
