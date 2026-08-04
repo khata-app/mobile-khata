@@ -41,7 +41,7 @@ const SCHEMES = {
   production: 'apps/khata',
 } as const;
 
-const NAME = 'apps/khata';
+const NAME = 'Khata';
 
 // Check if strict validation is required (before prebuild)
 const STRICT_ENV_VALIDATION = process.env.STRICT_ENV_VALIDATION === '1';

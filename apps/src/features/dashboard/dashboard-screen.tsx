@@ -17,6 +17,7 @@ type Props = {
 export function DashboardScreen({ bills, inventory, sales, expenses, employees, benefits, onNavigate }: Props) {
   const { width } = useWindowDimensions();
   const compact = width < 700;
+  const today = new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
   const summary = useMemo(() => {
     const purchases = bills.reduce((total, bill) => total + bill.total, 0);
     const revenue = sales.reduce((total, sale) => total + sale.total, 0);
@@ -49,13 +50,13 @@ export function DashboardScreen({ bills, inventory, sales, expenses, employees, 
   ];
 
   return <Screen>
-    <View style={[styles.top, compact && styles.topCompact]}><View><Eyebrow>Sunday, 2 August 2026 · Kathmandu</Eyebrow><Title subtitle="Business overview">Namaste, Khata</Title></View><Chip tone="green" icon={<CheckCircleIcon size={12} color={C.green} />}>Synced locally</Chip></View>
+    <View style={[styles.top, compact && styles.topCompact]}><View><Eyebrow>{today} · Kathmandu</Eyebrow><Title subtitle="Business overview">Namaste, Khata</Title></View><Chip tone="green" icon={<CheckCircleIcon size={12} color={C.green} />}>Synced locally</Chip></View>
     <View style={[styles.hero, compact && styles.heroCompact]}><View style={[styles.heroCopy, compact && styles.heroCopyCompact]}><Chip tone="gold" icon={<SparkleIcon size={12} color={C.goldDark} />}>Business overview</Chip><Text style={[styles.heroTitle, compact && styles.heroTitleCompact]}>Your business at a glance, with the important numbers first.</Text><Text style={styles.heroText}>Track sales, purchases, inventory value, profit, and cash pressure from one clean dashboard.</Text><View style={styles.heroButtons}><Button label="Quick create" icon={<PlusIcon size={16} color={C.white} />} onPress={() => onNavigate('purchase-scan')} /><Button label="Download report" variant="outline" icon={<ArrowRightIcon size={16} color={C.brick} />} onPress={() => onNavigate('reports')} /></View></View><View style={[styles.health, compact && styles.healthCompact]}><Eyebrow>Business health</Eyebrow><Text style={styles.healthValue}>{Math.max(32, Math.min(96, Math.round(62 + summary.margin * 0.5 - summary.lowStock * 3)))}%</Text><View style={styles.progress}><View style={[styles.progressFill, { width: `${Math.max(8, Math.min(100, 62 + summary.margin * 0.5))}%` }]} /></View><Eyebrow>Healthy profit margin and inventory coverage.</Eyebrow></View></View>
     <View style={styles.stats}>{stats.map(stat => <Stat key={stat.label} label={stat.label} value={stat.value} hint="Current period summary" tone={stat.tone} />)}</View>
     <SectionHeader title="Quick actions" detail="Frequently used shortcuts" />
     <View style={styles.actions}>{actions.map(action => <Pressable key={action.label} onPress={() => onNavigate(action.section)} style={({ pressed }) => [styles.action, compact && styles.actionCompact, pressed && { opacity: 0.75 }]}><View style={styles.actionIcon}><action.icon size={19} color={C.brick} /></View><Text style={styles.actionText}>{action.label}</Text><ArrowRightIcon size={16} color={C.muted} /></Pressable>)}</View>
     <SectionHeader title="Recent transactions" detail="Latest entries across your workspace" action={<Button label="View all" variant="ghost" icon={<ArrowRightIcon size={14} color={C.brick} />} onPress={() => onNavigate('bills')} />} />
-    {transactions.map((item, index) => <View key={`${item.title}-${index}`} style={styles.transaction}><View style={styles.transactionIcon}><ReceiptIcon size={18} color={C.brick} /></View><View style={{ flex: 1 }}><Text style={styles.transactionTitle}>{item.title}</Text><Eyebrow>{item.detail}</Eyebrow></View><Text style={[styles.amount, { color: item.tone }]}>{item.amount}</Text></View>)}
+    {transactions.length > 0 ? transactions.map((item, index) => <View key={`${item.title}-${index}`} style={styles.transaction}><View style={styles.transactionIcon}><ReceiptIcon size={18} color={C.brick} /></View><View style={{ flex: 1 }}><Text style={styles.transactionTitle}>{item.title}</Text><Eyebrow>{item.detail}</Eyebrow></View><Text style={[styles.amount, { color: item.tone }]}>{item.amount}</Text></View>) : <Card style={styles.emptyState}><View style={styles.emptyIcon}><ReceiptIcon size={20} color={C.brick} /></View><Text style={styles.transactionTitle}>No transactions yet</Text><Eyebrow>Your new entries will appear here.</Eyebrow><Button label="Record your first entry" onPress={() => onNavigate('purchase-scan')} /></Card>}
     <Card style={styles.insight}><View style={{ flex: 1, gap: 5 }}><Chip tone="gold" icon={<SparkleIcon size={12} color={C.goldDark} />}>Khata insight</Chip><Text style={styles.insightTitle}>{summary.lowStock > 0 ? `${summary.lowStock} items need a reorder decision this week.` : 'Your inventory coverage is in a healthy range.'}</Text><Eyebrow>Business health combines margin, inventory coverage, and pending work.</Eyebrow></View><Button label="Open inventory" variant="outline" icon={<BoxIcon size={16} color={C.brick} />} onPress={() => onNavigate('inventory')} /></Card>
     <Eyebrow>{employees.length} active employees · NPR {summary.stockValue.toLocaleString()} inventory value · {summary.margin.toFixed(1)}% net margin</Eyebrow>
   </Screen>;
@@ -89,6 +90,8 @@ const styles = StyleSheet.create({
   amount: { fontWeight: '800', fontSize: 14 },
   insight: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap', backgroundColor: '#FFF8E8', borderColor: '#E4C077' },
   insightTitle: { color: C.ink, fontSize: 16, lineHeight: 22, fontWeight: '800', fontFamily: SERIF },
+  emptyState: { alignItems: 'center', paddingVertical: 28, gap: 8 },
+  emptyIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: C.redLight, alignItems: 'center', justifyContent: 'center' },
 });
 
 export default DashboardScreen;

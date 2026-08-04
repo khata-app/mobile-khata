@@ -10,6 +10,11 @@ export default function Root({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <title>Khata</title>
+        <meta name="application-name" content="Khata" />
+        <meta name="theme-color" content="#6E2612" />
+        <meta name="description" content="A calm, practical accounting workspace for growing businesses." />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
         {/*
           This viewport disables scaling which makes the mobile website act more like a native app.
@@ -39,6 +44,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
 const responsiveBackground = `
 body {
   background-color: #F3E9D8;
+  margin: 0;
 }
 @media (prefers-color-scheme: dark) {
   body {
