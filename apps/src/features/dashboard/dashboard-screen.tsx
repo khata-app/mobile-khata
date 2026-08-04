@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   hero: { backgroundColor: C.brickDark, borderRadius: 18, padding: 22, flexDirection: 'row', gap: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', flexWrap: 'wrap' },
   heroCompact: { padding: 16, flexDirection: 'column', gap: 14 },
   heroCopy: { flex: 1, gap: 10, minWidth: 240 },
-  heroCopyCompact: { minWidth: 0 },
+  heroCopyCompact: { minWidth: 0, flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
   heroTitle: { color: C.white, fontSize: 27, lineHeight: 33, fontWeight: '800', marginTop: 5, fontFamily: SERIF, letterSpacing: -0.3 },
   heroTitleCompact: { fontSize: 22, lineHeight: 28 },
   heroText: { color: 'rgba(255,255,255,.78)', fontSize: 13, lineHeight: 20 },

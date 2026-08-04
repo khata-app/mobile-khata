@@ -1,3 +1,20 @@
+const { types: t } = require('@babel/core');
+
+function inlineExpoBaseUrl() {
+  return {
+    visitor: {
+      MemberExpression(path) {
+        if (path.get('object').matchesPattern('process.env')) {
+          const key = path.toComputedKey();
+          if (t.isStringLiteral(key) && key.value === 'EXPO_BASE_URL') {
+            path.replaceWith(t.valueToNode(process.env.EXPO_BASE_URL || ''));
+          }
+        }
+      },
+    },
+  };
+}
+
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -5,6 +22,7 @@ module.exports = function (api) {
       'babel-preset-expo',
     ],
     plugins: [
+      inlineExpoBaseUrl,
       [
         'module-resolver',
         {

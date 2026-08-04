@@ -51,7 +51,7 @@ export function WorkspaceScreen() {
               : section === 'expenses' ? <ExpensesPanel />
                 : <EmployeesPanel />;
 
-  return <SafeAreaView style={styles.safe}><FocusAwareStatusBar /><View style={styles.appFrame}>{desktop && <Sidebar active={section} onNavigate={navigate} company={company.name} />}{!desktop && <MobileHeader active={section} onNavigate={navigate} company={company.name} />}{desktop ? <View style={styles.desktopContent}>{content}</View> : <View style={styles.mobileContent}>{content}</View>}{!desktop && <MobileNav active={section} onNavigate={navigate} />}</View></SafeAreaView>;
+  return <SafeAreaView style={styles.safe}><FocusAwareStatusBar /><View style={styles.appFrame}>{desktop ? <View style={styles.desktopRow}><Sidebar active={section} onNavigate={navigate} company={company.name} /><View style={styles.desktopContent}>{content}</View></View> : <><MobileHeader active={section} onNavigate={navigate} company={company.name} /><View style={styles.mobileContent}>{content}</View><MobileNav active={section} onNavigate={navigate} /></>}</View></SafeAreaView>;
 }
 
 function Brand({ compact = false }: { compact?: boolean }) {
@@ -104,7 +104,8 @@ export default WorkspaceScreen;
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.cream },
-  appFrame: { flex: 1, flexDirection: 'row' },
+  appFrame: { flex: 1 },
+  desktopRow: { flex: 1, flexDirection: 'row' },
   sidebar: { width: 252, backgroundColor: C.brickDark, paddingHorizontal: 12, paddingTop: 22, paddingBottom: 18, gap: 14, overflow: 'hidden' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8 },
   logo: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: C.gold },
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
   footerText: { color: 'rgba(255,255,255,0.6)', fontSize: 11, lineHeight: 16, textAlign: 'center' },
   footerLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
   footerLinkText: { color: '#E4C077', textAlign: 'center', fontSize: 12, fontWeight: '800' },
-  desktopContent: { flexGrow: 1, backgroundColor: C.cream },
+  desktopContent: { flex: 1, minWidth: 0, backgroundColor: C.cream },
   mobileHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: C.paperLight, borderBottomColor: C.border, borderBottomWidth: 1 },
   backButton: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.cream },
   companyButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },

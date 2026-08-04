@@ -1,0 +1,89 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, dev, staging]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - branch: main
+            app_env: production
+            base_path: /mobile-khata
+            dest_dir: ""
+          - branch: dev
+            app_env: preview
+            base_path: /mobile-khata/preview/dev
+            dest_dir: preview/dev
+          - branch: staging
+            app_env: preview
+            base_path: /mobile-khata/preview/staging
+            dest_dir: preview/staging
+    if: ${{ github.ref_name == matrix.branch }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web
+        working-directory: apps
+        env:
+          EXPO_BASE_URL: ${{ matrix.base_path }}
+          EXPO_PUBLIC_APP_ENV: ${{ matrix.app_env }}
+          EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          EXPO_PUBLIC_VAR_NUMBER: ${{ vars.EXPO_PUBLIC_VAR_NUMBER || '10' }}
+          EXPO_PUBLIC_VAR_BOOL: ${{ vars.EXPO_PUBLIC_VAR_BOOL || 'true' }}
+        run: |
+          rm -rf dist
+          npx expo export -p web --output-dir dist
+          node scripts/rewrite-web-output.mjs dist "$EXPO_BASE_URL"
+
+      - name: Deploy to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages --depth=1 || true
+          rm -rf /tmp/gh-pages
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            git worktree add /tmp/gh-pages origin/gh-pages
+          else
+            git worktree add --detach /tmp/gh-pages
+            git -C /tmp/gh-pages checkout --orphan gh-pages
+          fi
+          TARGET="/tmp/gh-pages/${{ matrix.dest_dir }}"
+          rm -rf "$TARGET"
+          mkdir -p "$TARGET"
+          cp -R apps/dist/. "$TARGET"/
+          cd /tmp/gh-pages
+          git add -A
+          git commit -m "Deploy ${{ github.ref_name }} @ ${{ github.sha }}" || echo "Nothing to commit"
+          git push origin gh-pages
+          cd "$GITHUB_WORKSPACE"
+          git worktree remove --force /tmp/gh-pages
