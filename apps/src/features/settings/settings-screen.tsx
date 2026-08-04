@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useAuthStore as useAuth } from '@/features/auth/use-auth-store';
-import { Button, Card, C, Chip, Screen, SERIF, Text, Title } from '@/features/khata/ui';
+import { BackButton, Button, Card, C, Chip, Screen, SERIF, Text, Title } from '@/features/khata/ui';
 import { BuildingIcon, CalendarIcon, ChevronRightIcon, GlobeIcon, LogOutIcon, RefreshIcon, UsersIcon } from '@/features/khata/icons';
 import { useKhataStore } from '@/features/khata/store';
 
@@ -16,7 +16,7 @@ const items = [
 export function SettingsScreen() {
   const signOut = useAuth.use.signOut();
   const company = useKhataStore.use.company();
-  return <Screen><View style={styles.top}><Title subtitle="Manage your business and Khata preferences">Settings</Title><Chip tone="green">Local-first</Chip></View><Card style={styles.profile}><View style={styles.avatar}><Text style={styles.avatarText}>{company.name.slice(0, 1).toUpperCase()}</Text></View><View style={{ flex: 1 }}><Text style={styles.name}>{company.name}</Text><Text style={styles.meta}>{company.businessType} · {company.currency} · {company.city}</Text></View><Button label="Switch" variant="outline" onPress={() => router.replace('/company')} /></Card>{items.map(item => <Pressable key={item.title} onPress={() => {}} style={({ pressed }) => [styles.item, pressed && { opacity: 0.75 }]}><View style={styles.iconBox}><item.icon size={20} color={C.brick} /></View><View style={{ flex: 1 }}><Text style={styles.itemTitle}>{item.title}</Text><Text style={styles.itemDetail}>{item.detail}</Text></View><ChevronRightIcon size={18} color={C.muted} /></Pressable>)}<Card style={styles.signOut}><Text style={styles.itemTitle}>Sign out</Text><Text style={styles.itemDetail}>End this session on this device</Text><Button label="Sign out" variant="danger" icon={<LogOutIcon size={15} color={C.red} />} onPress={signOut} /></Card><Button label="Back to workspace" variant="ghost" onPress={() => router.replace('/')} /></Screen>;
+  return <Screen><BackButton onPress={() => router.back()} /><View style={styles.top}><Title subtitle="Manage your business and Khata preferences">Settings</Title><Chip tone="green">Local-first</Chip></View><Card style={styles.profile}><View style={styles.avatar}><Text style={styles.avatarText}>{company.name.slice(0, 1).toUpperCase()}</Text></View><View style={{ flex: 1 }}><Text style={styles.name}>{company.name}</Text><Text style={styles.meta}>{company.businessType} · {company.currency} · {company.city}</Text></View><Button label="Switch" variant="outline" onPress={() => router.replace('/company')} /></Card>{items.map(item => <Pressable key={item.title} onPress={() => {}} style={({ pressed }) => [styles.item, pressed && { opacity: 0.75 }]}><View style={styles.iconBox}><item.icon size={20} color={C.brick} /></View><View style={{ flex: 1 }}><Text style={styles.itemTitle}>{item.title}</Text><Text style={styles.itemDetail}>{item.detail}</Text></View><ChevronRightIcon size={18} color={C.muted} /></Pressable>)}<Card style={styles.signOut}><Text style={styles.itemTitle}>Sign out</Text><Text style={styles.itemDetail}>End this session on this device</Text><Button label="Sign out" variant="danger" icon={<LogOutIcon size={15} color={C.red} />} onPress={signOut} /></Card></Screen>;
 }
 export default SettingsScreen;
 

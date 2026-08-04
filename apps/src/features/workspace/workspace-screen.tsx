@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
 import { useKhataStore } from '@/features/khata/store';
+import { useAuthStore as useAuth } from '@/features/auth/use-auth-store';
 import { C, SERIF } from '@/features/khata/ui';
-import { ArrowUpRightIcon, BarChartIcon, BoxIcon, CartIcon, ChevronRightIcon, CoinsIcon, FileTextIcon, GridIcon, HomeIcon, KhataMark, MoreIcon, PlusIcon, ReceiptIcon, UsersIcon } from '@/features/khata/icons';
+import { ArrowUpRightIcon, BarChartIcon, BoxIcon, BuildingIcon, CaretDownIcon, CartIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CoinsIcon, FileTextIcon, GridIcon, HomeIcon, KhataMark, LogOutIcon, MoreIcon, PlusIcon, ReceiptIcon, UsersIcon } from '@/features/khata/icons';
 import DashboardScreen from '@/features/dashboard/dashboard-screen';
 import { BillsPanel, EmployeesPanel, ExpensesPanel, InventoryPanel, PurchasePanel, SalesInvoicePanel, SalesPanel } from './workspace-panels';
 
@@ -58,7 +59,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 function Sidebar({ active, onNavigate, company }: { active: Section; onNavigate: (section: string) => void; company: string }) {
-  return <View style={styles.sidebar}><Brand /><View style={styles.companyChip}><Text style={styles.companyName}>{company}</Text><Text style={styles.companyMeta}>NPR · Kathmandu</Text></View><View style={styles.nav}>{nav.map(item => <NavButton key={item.id} item={item} active={active === item.id} onPress={() => onNavigate(item.id)} />)}</View><View style={styles.sidebarFooter}><Text style={styles.footerText}>Khata keeps your business in perfect balance.</Text><Pressable onPress={() => onNavigate('settings')} style={styles.footerLink}><Text style={styles.footerLinkText}>Settings</Text><ChevronRightIcon size={14} color="#E4C077" /></Pressable></View></View>;
+  return <View style={styles.sidebar}><Brand /><Pressable onPress={() => router.push('/company')} style={({ pressed }) => [styles.companyChip, pressed && { opacity: 0.85 }]}><View style={{ flex: 1 }}><Text style={styles.companyName}>{company}</Text><Text style={styles.companyMeta}>NPR · Kathmandu</Text></View><CaretDownIcon size={15} color="rgba(255,255,255,0.7)" /></Pressable><View style={styles.nav}>{nav.map(item => <NavButton key={item.id} item={item} active={active === item.id} onPress={() => onNavigate(item.id)} />)}</View><View style={styles.sidebarFooter}><Text style={styles.footerText}>Khata keeps your business in perfect balance.</Text><Pressable onPress={signOut} style={styles.footerLink}><LogOutIcon size={15} color="#E4C077" /><Text style={styles.footerLinkText}>Sign out</Text></Pressable></View></View>;
 }
 
 function NavButton({ item, active, onPress }: { item: (typeof nav)[number]; active: boolean; onPress: () => void }) {
@@ -67,7 +68,23 @@ function NavButton({ item, active, onPress }: { item: (typeof nav)[number]; acti
 }
 
 function MobileHeader({ active, onNavigate, company }: { active: Section; onNavigate: (section: string) => void; company: string }) {
-  return <View style={styles.mobileHeader}><Brand compact /><View style={{ flex: 1 }}><Text style={styles.mobileCompany}>{company}</Text><Text style={styles.mobileSection}>{nav.find(item => item.id === active)?.label || 'Dashboard'}</Text></View><Pressable style={styles.switchButton} onPress={() => onNavigate('settings')}><MoreIcon size={20} color={C.ink} /></Pressable></View>;
+  const [menuOpen, setMenuOpen] = useState(false);
+  return <View style={styles.mobileHeader}>{active !== 'dashboard' && <Pressable onPress={() => onNavigate('dashboard')} style={styles.backButton}><ChevronLeftIcon size={21} color={C.ink} /></Pressable>}<Brand compact /><View style={{ flex: 1 }}><Pressable onPress={() => setMenuOpen(true)} style={styles.companyButton}><Text style={styles.mobileCompany} numberOfLines={1}>{company}</Text><CaretDownIcon size={14} color={C.muted} /></Pressable><Text style={styles.mobileSection}>{nav.find(item => item.id === active)?.label || 'Dashboard'}</Text></View><Pressable style={styles.switchButton} onPress={() => onNavigate('settings')}><MoreIcon size={20} color={C.ink} /></Pressable><CompanyMenu visible={menuOpen} onClose={() => setMenuOpen(false)} company={company} /></View>;
+}
+
+function CompanyMenu({ visible, onClose, company }: { visible: boolean; onClose: () => void; company: string }) {
+  const items: Array<{ icon: typeof BuildingIcon; label: string; detail: string; onPress: () => void }> = [
+    { icon: BuildingIcon, label: 'Switch company', detail: 'Open a different workspace', onPress: () => { onClose(); router.push('/company'); } },
+    { icon: LogOutIcon, label: 'Sign out', detail: 'End this session on this device', onPress: async () => { onClose(); await signOut(); } },
+  ];
+  return <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+    <Pressable style={styles.overlay} onPress={onClose}>
+      <View style={styles.menuCard}>
+        <View style={styles.menuHead}><BuildingIcon size={18} color={C.brick} /><View style={{ flex: 1 }}><Text style={styles.menuTitle} numberOfLines={1}>{company}</Text><Text style={styles.menuDetail}>Current workspace · NPR</Text></View><CheckIcon size={16} color={C.green} /></View>
+        {items.map(item => { const Icon = item.icon; return <Pressable key={item.label} onPress={item.onPress} style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.75 }]}><View style={styles.menuIconBox}><Icon size={17} color={C.brick} /></View><View style={{ flex: 1 }}><Text style={styles.menuItemText}>{item.label}</Text><Text style={styles.menuItemDetail}>{item.detail}</Text></View><ChevronRightIcon size={16} color={C.muted} /></Pressable>; })}
+      </View>
+    </Pressable>
+  </Modal>;
 }
 
 function MobileNav({ active, onNavigate }: { active: Section; onNavigate: (section: string) => void }) {
@@ -80,6 +97,8 @@ function MobileNav({ active, onNavigate }: { active: Section; onNavigate: (secti
   ];
   return <View style={styles.mobileNav}>{items.map(item => { const Icon = item.icon; return <Pressable key={item.id} onPress={() => onNavigate(item.id)} style={styles.mobileNavItem}><Icon size={21} color={active === item.id ? C.brick : C.muted} /><Text style={[styles.mobileNavLabel, active === item.id && { color: C.brick, fontWeight: '800' }]}>{item.label}</Text></Pressable>; })}</View>;
 }
+
+const signOut = async () => { await useAuth.getState().signOut(); router.replace('/login'); };
 
 export default WorkspaceScreen;
 
@@ -107,9 +126,20 @@ const styles = StyleSheet.create({
   footerLinkText: { color: '#E4C077', textAlign: 'center', fontSize: 12, fontWeight: '800' },
   desktopContent: { flexGrow: 1, backgroundColor: C.cream },
   mobileHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: C.paperLight, borderBottomColor: C.border, borderBottomWidth: 1 },
-  mobileCompany: { color: C.ink, fontWeight: '800', fontSize: 13 },
+  backButton: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.cream },
+  companyButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  mobileCompany: { color: C.ink, fontWeight: '800', fontSize: 13, flexShrink: 1 },
   mobileSection: { color: C.muted, fontSize: 11, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
   switchButton: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.cream },
+  overlay: { flex: 1, backgroundColor: 'rgba(44,33,21,0.4)', justifyContent: 'center', paddingHorizontal: 28 },
+  menuCard: { backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1, borderRadius: 16, padding: 8, gap: 4 },
+  menuHead: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderBottomColor: C.border, borderBottomWidth: 1, marginBottom: 4 },
+  menuTitle: { color: C.ink, fontWeight: '800', fontSize: 15 },
+  menuDetail: { color: C.muted, fontSize: 11, marginTop: 2 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 11 },
+  menuIconBox: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.redLight, alignItems: 'center', justifyContent: 'center' },
+  menuItemText: { color: C.ink, fontWeight: '700', fontSize: 14 },
+  menuItemDetail: { color: C.muted, fontSize: 11, marginTop: 2 },
   mobileContent: { flex: 1, backgroundColor: C.cream },
   mobileNav: { flexDirection: 'row', backgroundColor: C.paperLight, borderTopColor: C.border, borderTopWidth: 1, paddingBottom: 6, paddingTop: 8 },
   mobileNavItem: { flex: 1, alignItems: 'center', gap: 3 },
