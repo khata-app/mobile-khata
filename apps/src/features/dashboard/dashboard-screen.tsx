@@ -1,8 +1,8 @@
-import { useMemo, type ReactNode } from 'react';
-import { ImageBackground, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { Button, Card, C, Chip, Eyebrow, Screen, SectionHeader, Text, Title } from '@/features/khata/ui';
-import { AlertTriangleIcon, ArrowRightIcon, BoxIcon, CheckCircleIcon, CoinsIcon, FileTextIcon, PlusIcon, ReceiptIcon, SparkleIcon, TrendingUpIcon } from '@/features/khata/icons';
-import type { Bill, Benefit, Employee, Expense, InventoryItem, Sale } from '@/features/khata/types';
+import type { Benefit, Bill, Employee, Expense, InventoryItem, Sale } from '@/features/khata/types';
+import { useMemo } from 'react';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { AlertTriangleIcon, ArrowRightIcon, BarChartIcon, BoxIcon, BuyIcon, CameraIcon, CheckCircleIcon, CoinsIcon, FileTextIcon, GearIcon, ReceiptIcon, SellIcon, UsersIcon } from '@/features/khata/icons';
+import { C, Card, Chip, Eyebrow, Screen, SectionHeader, SERIF, Text, Title } from '@/features/khata/ui';
 
 type Props = {
   bills: Bill[];
@@ -17,133 +17,206 @@ type Props = {
 
 const money = (value: number) => `NPR ${Math.round(value).toLocaleString()}`;
 
-export function DashboardScreen({ bills, inventory, sales, expenses, employees, benefits, syncLabel = 'Local workspace', onNavigate }: Props) {
+export function DashboardScreen({ bills, inventory, sales, expenses, employees, benefits, syncLabel = 'Saved on this device', onNavigate }: Props) {
   const { width } = useWindowDimensions();
-  const compact = width < 700;
+  const compact = width < 640;
   const month = new Date().toISOString().slice(0, 7);
   const displayDate = new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   const summary = useMemo(() => {
-    const inPeriod = (date: string) => date.startsWith(month);
-    const periodBills = bills.filter(item => inPeriod(item.date));
-    const periodSales = sales.filter(item => inPeriod(item.date));
-    const periodExpenses = expenses.filter(item => inPeriod(item.date));
-    const periodBenefits = benefits.filter(item => inPeriod(item.date));
-    const revenue = periodSales.reduce((sum, item) => sum + item.total, 0);
-    const cost = periodSales.reduce((sum, item) => sum + item.cost, 0);
-    const operatingExpenses = periodExpenses.reduce((sum, item) => sum + item.amount, 0) + periodBenefits.reduce((sum, item) => sum + item.amount, 0);
-    const purchases = periodBills.reduce((sum, item) => sum + item.total, 0);
-    const grossProfit = revenue - cost;
-    const profit = grossProfit - operatingExpenses;
-    const cashChange = periodSales.filter(item => item.payment !== 'Credit').reduce((sum, item) => sum + item.total, 0)
-      - periodBills.filter(item => item.payment !== 'Credit').reduce((sum, item) => sum + item.total, 0)
-      - periodExpenses.filter(item => item.payment !== 'Credit').reduce((sum, item) => sum + item.amount, 0)
-      - periodBenefits.filter(item => item.payment !== 'Credit').reduce((sum, item) => sum + item.amount, 0);
+    const inMonth = (date: string) => date.startsWith(month);
+    const monthSales = sales.filter(item => inMonth(item.date));
+    const monthBills = bills.filter(item => inMonth(item.date));
+    const monthExpenses = expenses.filter(item => inMonth(item.date));
+    const monthBenefits = benefits.filter(item => inMonth(item.date));
+    const revenue = monthSales.reduce((sum, item) => sum + item.total, 0);
+    const cost = monthSales.reduce((sum, item) => sum + item.cost, 0);
+    const expensesTotal = monthExpenses.reduce((sum, item) => sum + item.amount, 0) + monthBenefits.reduce((sum, item) => sum + item.amount, 0);
+    const purchases = monthBills.reduce((sum, item) => sum + item.total, 0);
     const lowStock = inventory.filter(item => item.stock <= item.reorderLevel || item.stock <= item.dailyRequirement * 7);
-    const stockValue = inventory.reduce((sum, item) => sum + item.stock * item.purchaseCost, 0);
-    const creditSales = periodSales.filter(item => item.payment === 'Credit').reduce((sum, item) => sum + item.total, 0);
-    const creditPurchases = periodBills.filter(item => item.payment === 'Credit').reduce((sum, item) => sum + item.total, 0);
-    return { revenue, grossProfit, profit, operatingExpenses, purchases, cashChange, margin: revenue ? (grossProfit / revenue) * 100 : 0, lowStock, stockValue, creditSales, creditPurchases, periodBills, periodSales, periodExpenses };
+    return { revenue, profit: revenue - cost - expensesTotal, purchases, expensesTotal, lowStock, monthSales, monthBills };
   }, [benefits, bills, expenses, inventory, month, sales]);
 
-  const metrics = [
-    { label: 'Sales this month', value: money(summary.revenue), hint: `${summary.periodSales.length} invoices`, tone: 'blue' as const },
-    { label: 'Gross profit', value: money(summary.grossProfit), hint: `${summary.margin.toFixed(1)}% margin`, tone: 'acid' as const },
-    { label: 'Cash movement', value: `${summary.cashChange >= 0 ? '+' : '−'} ${money(Math.abs(summary.cashChange))}`, hint: 'Cash and bank entries', tone: 'orange' as const },
-    { label: 'Stock value', value: money(summary.stockValue), hint: `${inventory.length} products`, tone: 'bone' as const },
+  const destinations = [
+    { section: 'purchase-scan', label: 'Buy', detail: 'Add a supplier bill', icon: BuyIcon, tone: 'brick' as const },
+    { section: 'sales-scan', label: 'Sell', detail: 'Record a customer sale', icon: SellIcon, tone: 'green' as const },
+    { section: 'bills', label: 'Bills', detail: `${bills.length} saved`, icon: ReceiptIcon },
+    { section: 'inventory', label: 'Stock', detail: summary.lowStock.length ? `${summary.lowStock.length} running low` : `${inventory.length} products`, icon: BoxIcon },
+    { section: 'sales', label: 'Sales', detail: `${sales.length} entries`, icon: BarChartIcon },
+    { section: 'expenses', label: 'Expenses', detail: 'Running costs', icon: CoinsIcon },
+    { section: 'employees', label: 'Team', detail: `${employees.filter(item => item.status === 'active').length} people`, icon: UsersIcon },
+    { section: 'reports', label: 'Reports', detail: 'Profit, tax and stock', icon: FileTextIcon },
+    { section: 'settings', label: 'Settings', detail: 'Business and sync', icon: GearIcon },
   ];
-  const actions = [
-    { icon: PlusIcon, label: 'Record a purchase', detail: 'Scan or enter a supplier bill', section: 'purchase-scan' },
-    { icon: TrendingUpIcon, label: 'Record a sale', detail: 'Create a simple invoice', section: 'sales-scan' },
-    { icon: CoinsIcon, label: 'Add an expense', detail: 'Keep running costs visible', section: 'expenses' },
-    { icon: BoxIcon, label: 'Check stock', detail: 'Review reorder pressure', section: 'inventory' },
-  ];
+
   const activity = [
-    ...sales.slice(0, 3).map(item => ({ id: item.id, title: item.customer, detail: `${item.date} · Sale`, amount: `+ ${money(item.total)}`, color: C.green })),
-    ...bills.slice(0, 3).map(item => ({ id: item.id, title: item.vendor, detail: `${item.date} · Purchase`, amount: `− ${money(item.total)}`, color: C.goldDark })),
-    ...expenses.slice(0, 2).map(item => ({ id: item.id, title: item.description, detail: `${item.date} · Expense`, amount: `− ${money(item.amount)}`, color: C.red })),
+    ...sales.slice(0, 3).map(item => ({ id: item.id, title: item.customer, detail: `Sale · ${item.date}`, amount: `+ ${money(item.total)}`, color: C.greenDark })),
+    ...bills.slice(0, 2).map(item => ({ id: item.id, title: item.vendor, detail: `Purchase · ${item.date}`, amount: `− ${money(item.total)}`, color: C.brick })),
+    ...expenses.slice(0, 2).map(item => ({ id: item.id, title: item.description, detail: `Expense · ${item.date}`, amount: `− ${money(item.amount)}`, color: C.red })),
   ].slice(0, 5);
 
-  return <Screen>
-    <View style={[styles.top, compact && styles.topCompact]}><View style={styles.topCopy}><Eyebrow>{displayDate} · Kathmandu</Eyebrow><Title subtitle="The few numbers worth seeing first.">Good morning.</Title></View><Chip tone="green" icon={<CheckCircleIcon size={12} color={C.green} />}>{syncLabel}</Chip></View>
+  return (
+    <Screen>
+      <View style={styles.top}>
+        <View style={styles.topCopy}>
+          <Eyebrow>{displayDate}</Eyebrow>
+          <Title subtitle="Sales, purchases and stock—right where you need them.">Good morning</Title>
+        </View>
+        <Chip tone="green" icon={<CheckCircleIcon size={12} color={C.green} />}>{syncLabel}</Chip>
+      </View>
 
-    <ImageBackground source={require('../../../assets/landing/ink-texture-v2.jpg')} resizeMode="cover" imageStyle={styles.signalImage} style={[styles.signalCard, compact && styles.signalCardCompact]}><View style={styles.signalOverlay} /><View style={styles.signalCopy}><Chip tone="gold" icon={<SparkleIcon size={12} color={C.goldDark} />}>This month at a glance</Chip><Text style={[styles.signalTitle, compact && styles.signalTitleCompact]}>The useful picture is already here.</Text><Text style={styles.signalText}>{summary.lowStock.length ? `${summary.lowStock.length} stock item${summary.lowStock.length === 1 ? '' : 's'} need attention. Your margin and cash movement are beside it.` : 'Your stock coverage is steady. Keep sales, cash and profit moving together.'}</Text><View style={styles.signalActions}><Button label="Record entry" icon={<PlusIcon size={16} color={C.white} />} onPress={() => onNavigate('purchase-scan')} /><Button label="Open reports" variant="outline" icon={<ArrowRightIcon size={15} color={C.brick} />} onPress={() => onNavigate('reports')} /></View></View><View style={styles.signalMetric}><Eyebrow>Net cash movement</Eyebrow><Text style={styles.signalMetricValue}>{summary.cashChange >= 0 ? '+' : '−'} {money(Math.abs(summary.cashChange))}</Text><Text style={styles.signalMetricHint}>cash and bank entries</Text></View></ImageBackground>
+      <Pressable onPress={() => onNavigate('purchase-scan')} style={({ pressed }) => [styles.scanHero, compact && styles.scanHeroCompact, pressed && styles.pressed]}>
+        <View style={styles.cameraSeal}>
+          <CameraIcon size={34} color={C.paperLight} />
+          <View style={styles.cameraScratch} />
+        </View>
+        <View style={styles.scanCopy}>
+          <Text style={styles.scanLabel}>QUICKEST WAY TO ADD A BILL</Text>
+          <Text style={styles.scanTitle}>Point, snap, check, save.</Text>
+          <Text style={styles.scanText}>Open the camera or choose a bill photo from your gallery.</Text>
+        </View>
+        <ArrowRightIcon size={22} color={C.brickDark} />
+      </Pressable>
 
-    <View style={[styles.metrics, compact && styles.metricsCompact]}>{metrics.map(metric => <Metric key={metric.label} {...metric} />)}</View>
+      <View style={[styles.primaryActions, compact && styles.primaryActionsCompact]}>
+        <MainAction label="Buy" detail="Scan or enter a purchase" icon={BuyIcon} tone="brick" onPress={() => onNavigate('purchase-scan')} />
+        <MainAction label="Sell" detail="Scan or record a sale" icon={SellIcon} tone="green" onPress={() => onNavigate('sales-scan')} />
+      </View>
 
-    <SectionHeader title="Quick actions" detail="The four things owners do most" />
-    <View style={[styles.actions, compact && styles.actionsCompact]}>{actions.map(action => { const Icon = action.icon; return <Pressable key={action.label} onPress={() => onNavigate(action.section)} style={({ pressed }) => [styles.action, pressed && styles.pressed]}><View style={styles.actionIcon}><Icon size={19} color={C.blue} /></View><View style={styles.actionCopy}><Text style={styles.actionTitle}>{action.label}</Text><Text style={styles.actionDetail}>{action.detail}</Text></View><ArrowRightIcon size={16} color={C.muted} /></Pressable>; })}</View>
+      <View style={styles.summary}>
+        <Summary label="Sales this month" value={money(summary.revenue)} />
+        <Summary label="Profit after expenses" value={money(summary.profit)} />
+        <Summary label="Purchases" value={money(summary.purchases)} />
+        <Summary label="Stock to check" value={String(summary.lowStock.length)} warning={summary.lowStock.length > 0} />
+      </View>
 
-    <SectionHeader title="Needs attention" detail="Small decisions worth making today" />
-    <View style={[styles.attentionGrid, compact && styles.attentionGridCompact]}><Attention icon={<AlertTriangleIcon size={18} color={C.orange} />} title={summary.lowStock.length ? `${summary.lowStock.length} low-stock items` : 'Stock looks healthy'} detail={summary.lowStock.length ? summary.lowStock.slice(0, 2).map(item => item.name).join(' · ') : 'No reorder pressure detected.'} onPress={() => onNavigate('inventory')} /><Attention icon={<TrendingUpIcon size={18} color={C.blue} />} title={`${money(summary.creditSales)} receivable`} detail="Credit sales to follow up this month" onPress={() => onNavigate('sales')} /><Attention icon={<ReceiptIcon size={18} color={C.orange} />} title={`${money(summary.creditPurchases)} payable`} detail="Supplier credit in this period" onPress={() => onNavigate('bills')} /></View>
+      <SectionHeader title="Everything in your book" detail="Tap any tool to open it" />
+      <View style={styles.tileGrid}>
+        {destinations.map((item, index) => {
+          const Icon = item.icon; return (
+            <Pressable key={item.section} onPress={() => onNavigate(item.section)} style={({ pressed }) => [styles.tile, compact && styles.tileCompact, pressed && styles.pressed]}>
+              <View style={[styles.tileIcon, index % 3 === 1 && styles.tileIconSage, index % 3 === 2 && styles.tileIconGold]}><Icon size={22} color={C.brickDark} /></View>
+              <View style={styles.tileCopy}>
+                <Text style={styles.tileTitle}>{item.label}</Text>
+                <Text style={styles.tileDetail}>{item.detail}</Text>
+              </View>
+              <ArrowRightIcon size={15} color={C.muted} />
+            </Pressable>
+          );
+        })}
+      </View>
 
-    <SectionHeader title="Recent activity" detail="Latest entries across the workspace" action={<Button label="View all" variant="ghost" icon={<ArrowRightIcon size={14} color={C.brick} />} onPress={() => onNavigate('bills')} />} />
-    {activity.length ? activity.map(item => <View key={item.id} style={styles.activity}><View style={styles.activityIcon}><FileTextIcon size={17} color={C.blue} /></View><View style={styles.activityCopy}><Text style={styles.activityTitle}>{item.title}</Text><Eyebrow>{item.detail}</Eyebrow></View><Text style={[styles.activityAmount, { color: item.color }]}>{item.amount}</Text></View>) : <Card style={styles.empty}><Text style={styles.activityTitle}>Your book is ready.</Text><Text style={styles.emptyText}>Record the first sale or purchase to create a useful business picture.</Text><Button label="Record first entry" onPress={() => onNavigate('purchase-scan')} /></Card>}
+      {summary.lowStock.length > 0 && (
+        <Pressable onPress={() => onNavigate('inventory')} style={({ pressed }) => [styles.notice, pressed && styles.pressed]}>
+          <AlertTriangleIcon size={19} color={C.red} />
+          <View style={styles.noticeCopy}>
+            <Text style={styles.noticeTitle}>
+              {summary.lowStock.length}
+              {' '}
+              stock item
+              {summary.lowStock.length === 1 ? '' : 's'}
+              {' '}
+              need a look
+            </Text>
+            <Text style={styles.noticeText}>{summary.lowStock.slice(0, 3).map(item => item.name).join(' · ')}</Text>
+          </View>
+          <ArrowRightIcon size={16} color={C.red} />
+        </Pressable>
+      )}
 
-    <Card style={styles.footerCard}><View style={styles.footerCopy}><Chip tone="gold" icon={<SparkleIcon size={12} color={C.goldDark} />}>A better habit</Chip><Text style={styles.footerTitle}>A few clean entries today can save an entire afternoon later.</Text><Text style={styles.footerDetail}>{employees.filter(item => item.status === 'active').length} active team members · {money(summary.stockValue)} in stock · {money(summary.operatingExpenses)} operating costs</Text></View><Button label="Open reports" variant="outline" onPress={() => onNavigate('reports')} /></Card>
-  </Screen>;
+      <SectionHeader title="Latest entries" detail="Most recent activity" />
+      <Card style={styles.ledger}>
+        {activity.length
+          ? activity.map((item, index) => (
+              <View key={item.id} style={[styles.activity, index < activity.length - 1 && styles.activityRule]}>
+                <View style={styles.activityMark}><Text style={styles.activityMarkText}>{index + 1}</Text></View>
+                <View style={styles.activityCopy}>
+                  <Text style={styles.activityTitle}>{item.title}</Text>
+                  <Text style={styles.activityDetail}>{item.detail}</Text>
+                </View>
+                <Text style={[styles.activityAmount, { color: item.color }]}>{item.amount}</Text>
+              </View>
+            ))
+          : (
+              <View style={styles.empty}>
+                <Text style={styles.activityTitle}>No entries yet</Text>
+                <Text style={styles.activityDetail}>Your first sale or purchase will appear here.</Text>
+              </View>
+            )}
+      </Card>
+    </Screen>
+  );
 }
 
-function Metric({ label, value, hint, tone }: { label: string; value: string; hint: string; tone: 'blue' | 'acid' | 'orange' | 'bone' }) {
-  return <View style={[styles.metric, tone === 'blue' && styles.metricBlue, tone === 'acid' && styles.metricAcid, tone === 'orange' && styles.metricOrange, tone === 'bone' && styles.metricBone]}><Text style={[styles.metricLabel, tone === 'acid' && styles.darkText, tone === 'bone' && styles.darkText]}>{label}</Text><Text style={[styles.metricValue, tone === 'acid' && styles.darkText, tone === 'bone' && styles.darkText]}>{value}</Text><Text style={[styles.metricHint, tone === 'acid' && styles.darkText, tone === 'bone' && styles.darkText]}>{hint}</Text></View>;
+function MainAction({ label, detail, icon: Icon, tone, onPress }: { label: string; detail: string; icon: typeof BuyIcon; tone: 'brick' | 'green'; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.mainAction, tone === 'green' && styles.mainActionGreen, pressed && styles.pressed]}>
+      <View style={styles.mainActionIcon}><Icon size={29} color={tone === 'green' ? C.greenDark : C.brickDark} /></View>
+      <View style={styles.mainActionCopy}>
+        <Text style={styles.mainActionTitle}>{label}</Text>
+        <Text style={styles.mainActionDetail}>{detail}</Text>
+      </View>
+      <ArrowRightIcon size={19} color={tone === 'green' ? C.greenDark : C.brickDark} />
+    </Pressable>
+  );
 }
 
-function Attention({ icon, title, detail, onPress }: { icon: ReactNode; title: string; detail: string; onPress: () => void }) {
-  return <Pressable onPress={onPress} style={({ pressed }) => [styles.attention, pressed && styles.pressed]}><View style={styles.attentionIcon}>{icon}</View><View style={styles.attentionCopy}><Text style={styles.attentionTitle}>{title}</Text><Text style={styles.attentionDetail}>{detail}</Text></View><ArrowRightIcon size={15} color={C.muted} /></Pressable>;
+function Summary({ label, value, warning = false }: { label: string; value: string; warning?: boolean }) {
+  return (
+    <View style={styles.summaryItem}>
+      <Text style={styles.summaryLabel}>{label}</Text>
+      <Text style={[styles.summaryValue, warning && styles.summaryWarning]}>{value}</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' },
-  topCompact: { flexDirection: 'column', gap: 8 },
-  topCopy: { flex: 1, minWidth: 0 },
-  signalCard: { minHeight: 250, flexDirection: 'row', alignItems: 'stretch', gap: 18, overflow: 'hidden', padding: 22, backgroundColor: '#10182D', borderColor: '#263B7A', borderWidth: 1 },
-  signalCardCompact: { flexDirection: 'column', padding: 17, gap: 24 },
-  signalImage: { opacity: 0.36 },
-  signalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8,11,20,0.43)' },
-  signalCopy: { flex: 1, gap: 10, zIndex: 1 },
-  signalTitle: { color: C.white, fontSize: 31, lineHeight: 34, fontWeight: '900', letterSpacing: -1, maxWidth: 520 },
-  signalTitleCompact: { fontSize: 25, lineHeight: 29 },
-  signalText: { color: 'rgba(255,255,255,0.75)', fontSize: 13, lineHeight: 20, maxWidth: 540 },
-  signalActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  signalMetric: { minWidth: 174, alignSelf: 'flex-end', justifyContent: 'flex-end', padding: 16, backgroundColor: 'rgba(200,255,61,0.94)', zIndex: 1 },
-  signalMetricValue: { color: C.ink, fontSize: 26, lineHeight: 30, fontWeight: '900', marginTop: 5 },
-  signalMetricHint: { color: 'rgba(8,11,20,0.65)', fontSize: 11, marginTop: 5 },
-  metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  metricsCompact: { gap: 7 },
-  metric: { flex: 1, minWidth: 150, minHeight: 118, padding: 15, justifyContent: 'space-between' },
-  metricBlue: { backgroundColor: C.blue },
-  metricAcid: { backgroundColor: '#C8FF3D' },
-  metricOrange: { backgroundColor: C.orange },
-  metricBone: { backgroundColor: C.bone },
-  metricLabel: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.7 },
-  metricValue: { color: C.white, fontSize: 22, lineHeight: 25, fontWeight: '900', letterSpacing: -0.7 },
-  metricHint: { color: 'rgba(255,255,255,0.66)', fontSize: 10 },
-  darkText: { color: C.ink },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  actionsCompact: { flexDirection: 'column', gap: 7 },
-  action: { flexGrow: 1, minWidth: 220, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1 },
-  actionIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E7ECFF' },
-  actionCopy: { flex: 1, gap: 3 },
-  actionTitle: { color: C.ink, fontWeight: '900', fontSize: 13 },
-  actionDetail: { color: C.muted, fontSize: 11 },
-  attentionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  attentionGridCompact: { flexDirection: 'column', gap: 7 },
-  attention: { flex: 1, minWidth: 220, minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1 },
-  attentionIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF0E8' },
-  attentionCopy: { flex: 1, gap: 3 },
-  attentionTitle: { color: C.ink, fontSize: 13, fontWeight: '900' },
-  attentionDetail: { color: C.muted, fontSize: 11, lineHeight: 16 },
-  activity: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 11, padding: 12, marginBottom: 7, backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1 },
-  activityIcon: { width: 35, height: 35, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E7ECFF' },
-  activityCopy: { flex: 1, gap: 3 },
-  activityTitle: { color: C.ink, fontSize: 14, fontWeight: '900' },
-  activityAmount: { fontSize: 13, fontWeight: '900' },
-  empty: { alignItems: 'center', paddingVertical: 30 },
-  emptyText: { color: C.muted, fontSize: 13, lineHeight: 19, textAlign: 'center', maxWidth: 340 },
-  footerCard: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 14, backgroundColor: C.yellowLight, borderColor: '#E4C077' },
-  footerCopy: { flex: 1, minWidth: 220, gap: 5 },
-  footerTitle: { color: C.ink, fontSize: 17, lineHeight: 22, fontWeight: '900' },
-  footerDetail: { color: C.muted, fontSize: 11, lineHeight: 17 },
-  pressed: { opacity: 0.75 },
+  topCopy: { flex: 1, minWidth: 220 },
+  scanHero: { minHeight: 132, flexDirection: 'row', alignItems: 'center', gap: 17, padding: 18, backgroundColor: C.yellowLight, borderColor: C.gold, borderWidth: 1, borderRadius: 12, transform: [{ rotate: '-0.25deg' }] },
+  scanHeroCompact: { alignItems: 'flex-start' },
+  cameraSeal: { width: 66, height: 66, borderRadius: 25, alignItems: 'center', justifyContent: 'center', backgroundColor: C.brick, borderColor: C.brickDark, borderWidth: 2, transform: [{ rotate: '-3deg' }] },
+  cameraScratch: { position: 'absolute', width: 45, height: 1, bottom: 8, backgroundColor: 'rgba(255,255,255,0.35)', transform: [{ rotate: '5deg' }] },
+  scanCopy: { flex: 1, minWidth: 0 },
+  scanLabel: { color: C.goldDark, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  scanTitle: { color: C.ink, fontSize: 24, lineHeight: 29, fontWeight: '800', fontFamily: SERIF, marginTop: 5 },
+  scanText: { color: C.muted, fontSize: 12, lineHeight: 18, marginTop: 4 },
+  primaryActions: { flexDirection: 'row', gap: 10 },
+  primaryActionsCompact: { flexDirection: 'column' },
+  mainAction: { flex: 1, minHeight: 88, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 15, backgroundColor: C.redLight, borderColor: C.mud, borderWidth: 1, borderRadius: 10 },
+  mainActionGreen: { backgroundColor: C.greenLight, borderColor: C.green },
+  mainActionIcon: { width: 45, height: 45, alignItems: 'center', justifyContent: 'center', borderRadius: 16, borderColor: 'rgba(44,33,21,0.15)', borderWidth: 1, transform: [{ rotate: '2deg' }] },
+  mainActionCopy: { flex: 1 },
+  mainActionTitle: { color: C.ink, fontSize: 21, fontWeight: '800', fontFamily: SERIF },
+  mainActionDetail: { color: C.muted, fontSize: 11, marginTop: 3 },
+  summary: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: C.ink, borderRadius: 9, padding: 1, gap: 1, overflow: 'hidden' },
+  summaryItem: { flex: 1, minWidth: 145, minHeight: 83, justifyContent: 'center', padding: 13, backgroundColor: '#3A2B1D' },
+  summaryLabel: { color: 'rgba(250,243,229,0.63)', fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  summaryValue: { color: C.paperLight, fontSize: 19, fontWeight: '800', fontFamily: SERIF, marginTop: 7 },
+  summaryWarning: { color: '#E7C37B' },
+  tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+  tile: { flexGrow: 1, flexBasis: 230, minWidth: 205, minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 11, padding: 12, backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1, borderRadius: 9 },
+  tileCompact: { flexBasis: 145, minWidth: 140 },
+  tileIcon: { width: 39, height: 39, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: C.redLight, borderColor: '#DDB5A7', borderWidth: 1, transform: [{ rotate: '-2deg' }] },
+  tileIconSage: { backgroundColor: C.greenLight, borderColor: '#BCCDB1', transform: [{ rotate: '2deg' }] },
+  tileIconGold: { backgroundColor: C.yellowLight, borderColor: '#DFC98F', transform: [{ rotate: '-1deg' }] },
+  tileCopy: { flex: 1, minWidth: 0 },
+  tileTitle: { color: C.ink, fontSize: 14, fontWeight: '800' },
+  tileDetail: { color: C.muted, fontSize: 10, marginTop: 3 },
+  notice: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 11, padding: 13, backgroundColor: C.redLight, borderColor: '#D9A693', borderWidth: 1, borderRadius: 9 },
+  noticeCopy: { flex: 1 },
+  noticeTitle: { color: C.red, fontSize: 13, fontWeight: '800' },
+  noticeText: { color: C.muted, fontSize: 11, marginTop: 4 },
+  ledger: { paddingVertical: 3, gap: 0 },
+  activity: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  activityRule: { borderBottomColor: C.border, borderBottomWidth: 1 },
+  activityMark: { width: 27, height: 27, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bone, borderColor: C.border, borderWidth: 1, transform: [{ rotate: '-2deg' }] },
+  activityMarkText: { color: C.muted, fontSize: 10, fontFamily: SERIF, fontStyle: 'italic' },
+  activityCopy: { flex: 1, minWidth: 0 },
+  activityTitle: { color: C.ink, fontSize: 13, fontWeight: '800' },
+  activityDetail: { color: C.muted, fontSize: 10, marginTop: 3 },
+  activityAmount: { fontSize: 12, fontWeight: '800' },
+  empty: { alignItems: 'center', paddingVertical: 25 },
+  pressed: { opacity: 0.73, transform: [{ scale: 0.99 }] },
 });
 
 export default DashboardScreen;

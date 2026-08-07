@@ -7,7 +7,26 @@ import { CaretDownIcon, CheckIcon, ChevronLeftIcon } from '@/features/khata/icon
 export { Text };
 
 export const C = {
-  cream: '#F3E9D8', bone: '#F4EFE5', ink: '#2C2115', muted: '#8A7257', border: '#DCC9A8', brick: '#8D3117', brickDark: '#6E2612', mud: '#A9714A', gold: '#B98A2F', goldDark: '#8A6A1F', green: '#5F7A4E', greenDark: '#47603A', greenLight: '#E7EDDF', red: '#A64B33', redLight: '#F6E4DC', white: '#FFFFFF', paper: '#FAF3E5', paperLight: '#FDF8EE', blue: '#3156FF', blueLight: '#EFF6FF', orange: '#FF633C', acid: '#C8FF3D', yellowLight: '#F6E9C8', line: '#1F1B16',
+  cream: '#F3E9D8',
+  bone: '#F4EFE5',
+  ink: '#2C2115',
+  muted: '#8A7257',
+  border: '#DCC9A8',
+  brick: '#8D3117',
+  brickDark: '#6E2612',
+  mud: '#A9714A',
+  gold: '#B98A2F',
+  goldDark: '#8A6A1F',
+  green: '#5F7A4E',
+  greenDark: '#47603A',
+  greenLight: '#E7EDDF',
+  red: '#A64B33',
+  redLight: '#F6E4DC',
+  white: '#FFFFFF',
+  paper: '#FAF3E5',
+  paperLight: '#FDF8EE',
+  yellowLight: '#F6E9C8',
+  line: '#1F1B16',
 };
 
 // Serif display face for the old-ledger feel. On native 'serif' maps to the
@@ -24,42 +43,106 @@ export const ruledPaper: object = Platform.select({
 
 export function Screen({ children, scroll = true }: { children: React.ReactNode; scroll?: boolean }) {
   const content = <View style={[styles.container, ruledPaper]}>{children}</View>;
-  return <SafeAreaView style={styles.safe}><FocusAwareStatusBar /><ImageBackground source={require('../../../assets/landing/notebook-desk.jpg')} resizeMode="cover" imageStyle={styles.backgroundImage} style={styles.background}>{scroll ? <ScrollView contentContainerStyle={styles.scroll}>{content}</ScrollView> : content}</ImageBackground></SafeAreaView>;
+  return (
+    <SafeAreaView style={styles.safe}>
+      <FocusAwareStatusBar />
+      <ImageBackground source={require('../../../assets/landing/notebook-desk.jpg')} resizeMode="cover" imageStyle={styles.backgroundImage} style={styles.background}>{scroll ? <ScrollView contentContainerStyle={styles.scroll}>{content}</ScrollView> : content}</ImageBackground>
+    </SafeAreaView>
+  );
 }
 
 export function Eyebrow({ children }: { children: React.ReactNode }) { return <Text style={styles.eyebrow}>{children}</Text>; }
-export function Title({ children, subtitle }: { children: React.ReactNode; subtitle?: React.ReactNode }) { return <View style={styles.titleBlock}><Text style={styles.title}>{children}</Text>{subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}</View>; }
+export function Title({ children, subtitle }: { children: React.ReactNode; subtitle?: React.ReactNode }) {
+  return (
+    <View style={styles.titleBlock}>
+      <Text style={styles.title}>{children}</Text>
+      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+    </View>
+  );
+}
 export function Card({ children, style }: { children: React.ReactNode; style?: object }) { return <View style={[styles.card, style]}>{children}</View>; }
-export function SectionHeader({ title, detail, action }: { title: string; detail?: string; action?: React.ReactNode }) { return <View style={styles.sectionHeader}><View style={styles.sectionTitleWrap}><Text style={styles.sectionTitle}>{title}</Text>{detail && <Text style={styles.sectionDetail}>{detail}</Text>}</View>{action}</View>; }
-export function Button({ label, onPress, variant = 'primary', disabled = false, icon }: { label: string; onPress?: () => void; variant?: 'primary' | 'outline' | 'danger' | 'ghost'; disabled?: boolean; icon?: React.ReactNode }) { return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, variant === 'primary' && styles.primary, variant === 'outline' && styles.outline, variant === 'danger' && styles.danger, variant === 'ghost' && styles.ghost, pressed && styles.pressed, disabled && styles.disabled]}><View style={styles.buttonInner}>{icon}{<Text style={[styles.buttonText, variant === 'primary' && styles.primaryText, variant === 'outline' && styles.outlineText, variant === 'danger' && styles.dangerText, variant === 'ghost' && styles.ghostText]}>{label}</Text>}</View></Pressable>; }
-export function BackButton({ onPress, label }: { onPress?: () => void; label?: string }) { return <Pressable accessibilityLabel={label || 'Go back'} accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><ChevronLeftIcon size={19} color={C.brick} />{label && <Text style={styles.backText}>{label}</Text>}</Pressable>; }
+export function SectionHeader({ title, detail, action }: { title: string; detail?: string; action?: React.ReactNode }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionTitleWrap}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {detail && <Text style={styles.sectionDetail}>{detail}</Text>}
+      </View>
+      {action}
+    </View>
+  );
+}
+export function Button({ label, onPress, variant = 'primary', disabled = false, icon }: { label: string; onPress?: () => void; variant?: 'primary' | 'outline' | 'danger' | 'ghost'; disabled?: boolean; icon?: React.ReactNode }) {
+  return (
+    <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, variant === 'primary' && styles.primary, variant === 'outline' && styles.outline, variant === 'danger' && styles.danger, variant === 'ghost' && styles.ghost, pressed && styles.pressed, disabled && styles.disabled]}>
+      <View style={styles.buttonInner}>
+        {icon}
+        <Text style={[styles.buttonText, variant === 'primary' && styles.primaryText, variant === 'outline' && styles.outlineText, variant === 'danger' && styles.dangerText, variant === 'ghost' && styles.ghostText]}>{label}</Text>
+      </View>
+    </Pressable>
+  );
+}
+export function BackButton({ onPress, label }: { onPress?: () => void; label?: string }) {
+  return (
+    <Pressable accessibilityLabel={label || 'Go back'} accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+      <ChevronLeftIcon size={19} color={C.brick} />
+      {label && <Text style={styles.backText}>{label}</Text>}
+    </Pressable>
+  );
+}
 export function Select({ label, value, options, onChange, placeholder = 'Select…' }: { label: string; value: string; options: Array<{ label: string; value: string }>; onChange: (value: string) => void; placeholder?: string }) {
   const [open, setOpen] = React.useState(false);
   const selected = options.find(option => option.value === value);
-  return <View style={styles.field}>
-    <Text style={styles.fieldLabel}>{label}</Text>
-    <Pressable onPress={() => setOpen(true)} style={({ pressed }) => [styles.input, styles.select, pressed && { opacity: 0.75 }]}>
-      <Text style={[styles.selectValue, !selected && styles.selectPlaceholder]}>{selected ? selected.label : placeholder}</Text>
-      <CaretDownIcon size={16} color={C.muted} />
-    </Pressable>
-    <Modal transparent visible={open} animationType="fade" onRequestClose={() => setOpen(false)}>
-      <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
-        <View style={styles.dropdown}>
-          {options.map(option => {
-            const active = option.value === value;
-            return <Pressable key={option.value} onPress={() => { onChange(option.value); setOpen(false); }} style={({ pressed }) => [styles.option, active && styles.optionActive, pressed && { opacity: 0.75 }]}>
-              <Text style={[styles.optionText, active && styles.optionTextActive]}>{option.label}</Text>
-              {active && <CheckIcon size={15} color={C.brick} />}
-            </Pressable>;
-          })}
-        </View>
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <Pressable onPress={() => setOpen(true)} style={({ pressed }) => [styles.input, styles.select, pressed && { opacity: 0.75 }]}>
+        <Text style={[styles.selectValue, !selected && styles.selectPlaceholder]}>{selected ? selected.label : placeholder}</Text>
+        <CaretDownIcon size={16} color={C.muted} />
       </Pressable>
-    </Modal>
-  </View>;
+      <Modal transparent visible={open} animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
+          <View style={styles.dropdown}>
+            {options.map((option) => {
+              const active = option.value === value;
+              return (
+                <Pressable key={option.value} onPress={() => { onChange(option.value); setOpen(false); }} style={({ pressed }) => [styles.option, active && styles.optionActive, pressed && { opacity: 0.75 }]}>
+                  <Text style={[styles.optionText, active && styles.optionTextActive]}>{option.label}</Text>
+                  {active && <CheckIcon size={15} color={C.brick} />}
+                </Pressable>
+              );
+            })}
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
+  );
 }
-export function Field({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false }: { label: string; value: string; onChangeText: (value: string) => void; placeholder?: string; keyboardType?: 'default' | 'numeric' | 'phone-pad'; multiline?: boolean }) { return <View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={C.muted} keyboardType={keyboardType} multiline={multiline} style={[styles.input, multiline && styles.multiline]} /></View>; }
-export function Chip({ children, tone = 'neutral', icon }: { children: React.ReactNode; tone?: 'neutral' | 'green' | 'gold' | 'red'; icon?: React.ReactNode }) { return <View style={[styles.chip, tone === 'green' && { backgroundColor: C.greenLight }, tone === 'gold' && { backgroundColor: C.yellowLight }, tone === 'red' && { backgroundColor: C.redLight }]}>{icon}<Text style={[styles.chipText, tone === 'green' && { color: C.green }, tone === 'gold' && { color: C.goldDark }, tone === 'red' && { color: C.red }]}>{children}</Text></View>; }
-export function Stat({ label, value, hint, tone = 'green' }: { label: string; value: string; hint?: string; tone?: 'green' | 'gold' | 'red' | 'brick' }) { const background = tone === 'green' ? C.greenLight : tone === 'gold' ? C.yellowLight : tone === 'red' ? C.redLight : '#F1E2D4'; const color = tone === 'green' ? C.green : tone === 'gold' ? C.goldDark : tone === 'red' ? C.red : C.brick; return <View style={[styles.stat, { backgroundColor: background }]}><Eyebrow>{label}</Eyebrow><Text style={[styles.statValue, { color }]}>{value}</Text>{hint && <Text style={styles.statHint}>{hint}</Text>}</View>; }
+export function Field({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false }: { label: string; value: string; onChangeText: (value: string) => void; placeholder?: string; keyboardType?: 'default' | 'numeric' | 'phone-pad'; multiline?: boolean }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={C.muted} keyboardType={keyboardType} multiline={multiline} style={[styles.input, multiline && styles.multiline]} />
+    </View>
+  );
+}
+export function Chip({ children, tone = 'neutral', icon }: { children: React.ReactNode; tone?: 'neutral' | 'green' | 'gold' | 'red'; icon?: React.ReactNode }) {
+  return (
+    <View style={[styles.chip, tone === 'green' && { backgroundColor: C.greenLight }, tone === 'gold' && { backgroundColor: C.yellowLight }, tone === 'red' && { backgroundColor: C.redLight }]}>
+      {icon}
+      <Text style={[styles.chipText, tone === 'green' && { color: C.green }, tone === 'gold' && { color: C.goldDark }, tone === 'red' && { color: C.red }]}>{children}</Text>
+    </View>
+  );
+}
+export function Stat({ label, value, hint, tone = 'green' }: { label: string; value: string; hint?: string; tone?: 'green' | 'gold' | 'red' | 'brick' }) {
+  const background = tone === 'green' ? C.greenLight : tone === 'gold' ? C.yellowLight : tone === 'red' ? C.redLight : '#F1E2D4'; const color = tone === 'green' ? C.green : tone === 'gold' ? C.goldDark : tone === 'red' ? C.red : C.brick; return (
+    <View style={[styles.stat, { backgroundColor: background }]}>
+      <Eyebrow>{label}</Eyebrow>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      {hint && <Text style={styles.statHint}>{hint}</Text>}
+    </View>
+  );
+}
 
 export const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.cream },
