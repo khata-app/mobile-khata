@@ -9,7 +9,7 @@ import FlashMessage from 'react-native-flash-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useThemeConfig } from '@/components/ui/use-theme-config';
-import { hydrateAuth } from '@/features/auth/use-auth-store';
+import { hydrateAuth, useAuthStore } from '@/features/auth/use-auth-store';
 
 import { APIProvider } from '@/lib/api';
 // Import  global CSS file
@@ -22,16 +22,24 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
-hydrateAuth();
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 // Set the animation options. This is optional.
 SplashScreen.setOptions({
   duration: 500,
   fade: true,
 });
+void hydrateAuth();
 
 export default function RootLayout() {
+  const authStatus = useAuthStore.use.status();
+
+  React.useEffect(() => {
+    if (authStatus !== 'idle') {
+      void SplashScreen.hideAsync();
+    }
+  }, [authStatus]);
+
   return (
     <Providers>
       <Stack>

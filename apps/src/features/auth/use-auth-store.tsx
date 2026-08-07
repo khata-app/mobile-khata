@@ -10,6 +10,21 @@ type AuthState = {
   hydrate: () => Promise<void>;
 };
 
+const AUTH_HYDRATION_TIMEOUT_MS = 8_000;
+
+async function getSessionWithTimeout() {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Auth session check timed out')), AUTH_HYDRATION_TIMEOUT_MS);
+  });
+
+  try {
+    return await Promise.race([supabase.auth.getSession(), timeout]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 const _useAuthStore = create<AuthState>(set => ({
   status: 'idle',
   session: null,
@@ -18,12 +33,16 @@ const _useAuthStore = create<AuthState>(set => ({
     set({ status: 'signOut', session: null });
   },
   hydrate: async () => {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) {
+    try {
+      const { data, error } = await getSessionWithTimeout();
+      if (error) {
+        set({ status: 'signOut', session: null });
+        return;
+      }
+      set({ status: data.session ? 'signIn' : 'signOut', session: data.session });
+    } catch {
       set({ status: 'signOut', session: null });
-      return;
     }
-    set({ status: data.session ? 'signIn' : 'signOut', session: data.session });
   },
 }));
 
