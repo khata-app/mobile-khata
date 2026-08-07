@@ -36,3 +36,12 @@ For UI or native changes, also smoke-test the affected flow with `pnpm web` or `
 - Make focused commits with conventional commit messages.
 - Never commit secrets, local `.env` files, generated build output, or dependency directories.
 - Do not rewrite history or discard unrelated changes.
+
+## Knowledge changes log
+
+- Keep the `knowledge changes/` folder in the repository.
+- Every substantial change gets the next numbered, descriptive Markdown file, such as `1_supabase-foundation.md` or `2_ui-flow.md`.
+- Keep each numbered note compressed and practical: record decisions, schema contracts, commands, pitfalls, and anything learned that will prevent repeated investigation.
+- When a numbered note becomes too large, continue in the next number rather than making one unbounded file.
+- Keep `knowledge changes/0_index.md` as the running index that summarizes what changed in every numbered note.
+- Update the index and the relevant numbered note in the same change.

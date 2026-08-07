@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Button, Card, C, Chip, Eyebrow, Field, Screen, SectionHeader, Select, Stat, Text, Title } from '@/features/khata/ui';
 import { AlertTriangleIcon, BoxIcon, PlusIcon, SparkleIcon, UploadIcon } from '@/features/khata/icons';
 import { useKhataStore } from '@/features/khata/store';
+import { saveBillDocument, scanBill } from '@/lib/supabase-repository';
 import type { Bill, Employee, InventoryItem } from '@/features/khata/types';
 
 const money = (value: number) => `NPR ${Math.round(value).toLocaleString()}`;
@@ -70,13 +72,39 @@ export function BillsPanel({ onNavigate }: { onNavigate: (section: string) => vo
 
 export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) => void }) {
   const addBill = useKhataStore.use.addBill();
+  const businessId = useKhataStore.use.businessId();
   const [form, setForm] = useState({ vendor: '', invoice: '', total: '', vat: '', payment: 'Cash' });
   const [status, setStatus] = useState('Upload a bill or start a manual entry.');
   const [review, setReview] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const update = (key: string, value: string) => setForm(current => ({ ...current, [key]: value }));
-  const scanDemo = () => { setReview(true); setForm({ vendor: 'Bhatbhateni Supermarket', invoice: 'PUR-1042', total: '8200', vat: '1066', payment: 'Cash' }); setStatus('AI scan complete. Review the highlighted fields before saving.'); };
+  const scanDocument = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], base64: true, quality: 0.7, allowsEditing: false });
+    if (result.canceled || !result.assets[0]?.base64) { setStatus('No image selected. You can still enter the purchase manually.'); return; }
+    setScanning(true);
+    setStatus('Gemini is reading the bill. Please review every field before saving.');
+    try {
+      const extracted = await scanBill(result.assets[0].base64, result.assets[0].mimeType || 'image/jpeg');
+      if (businessId) {
+        try {
+          await saveBillDocument(businessId, result.assets[0].base64, result.assets[0].mimeType || 'image/jpeg', extracted);
+        } catch {
+          setStatus('AI scan complete. The fields are ready, but the original image could not be attached.');
+        }
+      }
+      setReview(true);
+      setForm({ vendor: extracted.vendor, invoice: extracted.invoice, total: String(extracted.total || ''), vat: String(extracted.vat || ''), payment: 'Cash' });
+      setStatus(`AI scan complete · ${Math.round(extracted.confidence * 100)}% confidence. Review the fields before saving.`);
+    } catch (error) {
+      setReview(true);
+      setStatus(error instanceof Error ? error.message : 'AI scan failed. Enter the bill manually.');
+    } finally {
+      setScanning(false);
+    }
+  };
+  const scanDemo = () => { setReview(true); setForm({ vendor: 'Bhatbhateni Supermarket', invoice: 'PUR-1042', total: '8200', vat: '1066', payment: 'Cash' }); setStatus('Demo extraction loaded. Review the highlighted fields before saving.'); };
   const save = () => { if (!form.vendor || !num(form.total)) return; addBill({ vendor: form.vendor, invoice: form.invoice || 'PUR-DRAFT', date: new Date().toISOString().slice(0, 10), total: num(form.total), vat: num(form.vat), payment: form.payment, status: 'saved' }); setStatus('Purchase saved to your local workspace.'); setReview(false); setForm({ vendor: '', invoice: '', total: '', vat: '', payment: 'Cash' }); onNavigate('bills'); };
-  return <Screen><Title subtitle="Enter supplier purchases manually or from uploaded bills.">Purchases</Title><Card style={styles.scanCard}><Chip tone="green" icon={<SparkleIcon size={12} color={C.green} />}>OCR review workflow</Chip><Text style={styles.panelTitle}>Scan a purchase bill, then approve the extracted details.</Text><Text style={styles.panelText}>Original documents stay attached to the review record. AI suggestions are never posted without your approval.</Text><View style={styles.buttonRow}><Button label="Choose bill photo / PDF" icon={<UploadIcon size={16} color={C.white} />} onPress={scanDemo} /><Button label="Enter manually" variant="outline" onPress={() => { setReview(true); setStatus('Manual entry ready.'); }} /></View><Text style={styles.status}>{status}</Text></Card><Card><SectionHeader title="Document details" detail={review ? 'Review and correct before saving' : 'Supplier, invoice, tax and payment'} />{review && <Chip tone="gold" icon={<AlertTriangleIcon size={12} color={C.goldDark} />}>AI confidence: review totals</Chip>}<View style={styles.fieldRow}><Field label="Supplier name" value={form.vendor} onChangeText={value => update('vendor', value)} placeholder="Supplier or vendor" /><Field label="Invoice number" value={form.invoice} onChangeText={value => update('invoice', value)} placeholder="PUR-0001" /></View><View style={styles.fieldRow}><Field label="Subtotal / grand total" value={form.total} onChangeText={value => update('total', value)} keyboardType="numeric" placeholder="0" /><Field label="VAT amount" value={form.vat} onChangeText={value => update('vat', value)} keyboardType="numeric" placeholder="0" /></View><View style={styles.fieldRow}><Select label="Payment method" value={form.payment} options={paymentOptions} onChange={value => update('payment', value)} /></View><View style={styles.buttonRow}><Button label="Approve & save purchase" onPress={save} disabled={!form.vendor || !num(form.total)} /><Button label="Open bills" variant="ghost" onPress={() => onNavigate('bills')} /></View></Card></Screen>;
+  return <Screen><Title subtitle="Enter supplier purchases manually or from uploaded bills.">Purchases</Title><Card style={styles.scanCard}><Chip tone="green" icon={<SparkleIcon size={12} color={C.green} />}>OCR review workflow</Chip><Text style={styles.panelTitle}>Scan a purchase bill, then approve the extracted details.</Text><Text style={styles.panelText}>The selected image is sent to the authenticated Supabase Edge Function, which keeps the Gemini key on the server. AI suggestions are never posted without your approval.</Text><View style={styles.buttonRow}><Button label={scanning ? 'Reading bill…' : 'Choose bill photo'} icon={<UploadIcon size={16} color={C.white} />} onPress={() => { void scanDocument(); }} disabled={scanning} /><Button label="Use demo scan" variant="outline" onPress={scanDemo} disabled={scanning} /><Button label="Enter manually" variant="ghost" onPress={() => { setReview(true); setStatus('Manual entry ready.'); }} /></View><Text style={styles.status}>{status}</Text></Card><Card><SectionHeader title="Document details" detail={review ? 'Review and correct before saving' : 'Supplier, invoice, tax and payment'} />{review && <Chip tone="gold" icon={<AlertTriangleIcon size={12} color={C.goldDark} />}>AI confidence: review totals</Chip>}<View style={styles.fieldRow}><Field label="Supplier name" value={form.vendor} onChangeText={value => update('vendor', value)} placeholder="Supplier or vendor" /><Field label="Invoice number" value={form.invoice} onChangeText={value => update('invoice', value)} placeholder="PUR-0001" /></View><View style={styles.fieldRow}><Field label="Subtotal / grand total" value={form.total} onChangeText={value => update('total', value)} keyboardType="numeric" placeholder="0" /><Field label="VAT amount" value={form.vat} onChangeText={value => update('vat', value)} keyboardType="numeric" placeholder="0" /></View><View style={styles.fieldRow}><Select label="Payment method" value={form.payment} options={paymentOptions} onChange={value => update('payment', value)} /></View><View style={styles.buttonRow}><Button label="Approve & save purchase" onPress={save} disabled={!form.vendor || !num(form.total)} /><Button label="Open bills" variant="ghost" onPress={() => onNavigate('bills')} /></View></Card></Screen>;
 }
 
 export function SalesInvoicePanel({ onNavigate }: { onNavigate: (section: string) => void }) {

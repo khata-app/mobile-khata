@@ -152,6 +152,11 @@ max_indexes = 5
 # Vector Buckets is available to Supabase Pro plan.
 # [storage.vector.buckets.documents-openai]
 
+[functions.scan-bill]
+# The function must receive the caller's Supabase access token before it can
+# ask Gemini to process a private business document.
+verify_jwt = true
+
 [auth]
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used

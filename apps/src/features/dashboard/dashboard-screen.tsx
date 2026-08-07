@@ -11,10 +11,11 @@ type Props = {
   expenses: Expense[];
   employees: Employee[];
   benefits: Benefit[];
+  syncLabel?: string;
   onNavigate: (section: string) => void;
 };
 
-export function DashboardScreen({ bills, inventory, sales, expenses, employees, benefits, onNavigate }: Props) {
+export function DashboardScreen({ bills, inventory, sales, expenses, employees, benefits, syncLabel = 'Synced locally', onNavigate }: Props) {
   const { width } = useWindowDimensions();
   const compact = width < 700;
   const today = new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
@@ -50,7 +51,7 @@ export function DashboardScreen({ bills, inventory, sales, expenses, employees, 
   ];
 
   return <Screen>
-    <View style={[styles.top, compact && styles.topCompact]}><View><Eyebrow>{today} · Kathmandu</Eyebrow><Title subtitle="Business overview">Namaste, Khata</Title></View><Chip tone="green" icon={<CheckCircleIcon size={12} color={C.green} />}>Synced locally</Chip></View>
+    <View style={[styles.top, compact && styles.topCompact]}><View><Eyebrow>{today} · Kathmandu</Eyebrow><Title subtitle="Business overview">Namaste, Khata</Title></View><Chip tone="green" icon={<CheckCircleIcon size={12} color={C.green} />}>{syncLabel}</Chip></View>
     <View style={[styles.hero, compact && styles.heroCompact]}><View style={[styles.heroCopy, compact && styles.heroCopyCompact]}><Chip tone="gold" icon={<SparkleIcon size={12} color={C.goldDark} />}>Business overview</Chip><Text style={[styles.heroTitle, compact && styles.heroTitleCompact]}>Your business at a glance, with the important numbers first.</Text><Text style={styles.heroText}>Track sales, purchases, inventory value, profit, and cash pressure from one clean dashboard.</Text><View style={styles.heroButtons}><Button label="Quick create" icon={<PlusIcon size={16} color={C.white} />} onPress={() => onNavigate('purchase-scan')} /><Button label="Download report" variant="outline" icon={<ArrowRightIcon size={16} color={C.brick} />} onPress={() => onNavigate('reports')} /></View></View><View style={[styles.health, compact && styles.healthCompact]}><Eyebrow>Business health</Eyebrow><Text style={styles.healthValue}>{Math.max(32, Math.min(96, Math.round(62 + summary.margin * 0.5 - summary.lowStock * 3)))}%</Text><View style={styles.progress}><View style={[styles.progressFill, { width: `${Math.max(8, Math.min(100, 62 + summary.margin * 0.5))}%` }]} /></View><Eyebrow>Healthy profit margin and inventory coverage.</Eyebrow></View></View>
     <View style={styles.stats}>{stats.map(stat => <Stat key={stat.label} label={stat.label} value={stat.value} hint="Current period summary" tone={stat.tone} />)}</View>
     <SectionHeader title="Quick actions" detail="Frequently used shortcuts" />

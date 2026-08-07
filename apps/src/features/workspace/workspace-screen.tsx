@@ -28,6 +28,9 @@ export function WorkspaceScreen() {
   const [section, setSection] = useState<Section>('dashboard');
   const hydrate = useKhataStore.use.hydrate();
   const hydrated = useKhataStore.use.hydrated();
+  const syncing = useKhataStore.use.syncing();
+  const syncError = useKhataStore.use.syncError();
+  const businessId = useKhataStore.use.businessId();
   const company = useKhataStore.use.company();
   const bills = useKhataStore.use.bills();
   const inventory = useKhataStore.use.inventory();
@@ -42,7 +45,8 @@ export function WorkspaceScreen() {
     setSection(next as Section);
   };
 
-  const content = section === 'dashboard' ? <DashboardScreen bills={bills} inventory={inventory} sales={sales} expenses={expenses} employees={employees} benefits={benefits} onNavigate={navigate} />
+  const syncLabel = syncing ? 'Syncing…' : syncError ? 'Offline queue' : businessId ? 'Synced to Supabase' : 'Demo workspace';
+  const content = section === 'dashboard' ? <DashboardScreen bills={bills} inventory={inventory} sales={sales} expenses={expenses} employees={employees} benefits={benefits} syncLabel={syncLabel} onNavigate={navigate} />
     : section === 'purchase-scan' ? <PurchasePanel onNavigate={navigate} />
       : section === 'sales-scan' ? <SalesInvoicePanel onNavigate={navigate} />
         : section === 'bills' ? <BillsPanel onNavigate={navigate} />
@@ -51,7 +55,11 @@ export function WorkspaceScreen() {
               : section === 'expenses' ? <ExpensesPanel />
                 : <EmployeesPanel />;
 
-  return <SafeAreaView style={styles.safe}><FocusAwareStatusBar /><View style={styles.appFrame}>{desktop ? <View style={styles.desktopRow}><Sidebar active={section} onNavigate={navigate} company={company.name} /><View style={styles.desktopContent}>{content}</View></View> : <><MobileHeader active={section} onNavigate={navigate} company={company.name} /><View style={styles.mobileContent}>{content}</View><MobileNav active={section} onNavigate={navigate} /></>}</View></SafeAreaView>;
+  return <SafeAreaView style={styles.safe}><FocusAwareStatusBar /><View style={styles.appFrame}>{desktop ? <View style={styles.desktopRow}><Sidebar active={section} onNavigate={navigate} company={company.name} /><View style={styles.desktopContent}>{syncing && <SyncBanner text="Saving this workspace to Supabase…" tone="pending" />}{syncError && <SyncBanner text={syncError} tone="error" />}{content}</View></View> : <><MobileHeader active={section} onNavigate={navigate} company={company.name} /><View style={styles.mobileContent}>{syncing && <SyncBanner text="Syncing securely…" tone="pending" />}{syncError && <SyncBanner text={syncError} tone="error" />}{content}</View><MobileNav active={section} onNavigate={navigate} /></>}</View></SafeAreaView>;
+}
+
+function SyncBanner({ text, tone }: { text: string; tone: 'pending' | 'error' }) {
+  return <View style={[styles.syncBanner, tone === 'error' && styles.syncBannerError]}><Text style={styles.syncText}>{text}</Text></View>;
 }
 
 function Brand({ compact = false }: { compact?: boolean }) {
@@ -126,6 +134,9 @@ const styles = StyleSheet.create({
   footerLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
   footerLinkText: { color: '#E4C077', textAlign: 'center', fontSize: 12, fontWeight: '800' },
   desktopContent: { flex: 1, minWidth: 0, backgroundColor: C.cream },
+  syncBanner: { backgroundColor: C.greenLight, borderBottomColor: '#C5D6BA', borderBottomWidth: 1, paddingHorizontal: 18, paddingVertical: 7 },
+  syncBannerError: { backgroundColor: C.redLight, borderBottomColor: '#DFB4A4' },
+  syncText: { color: C.greenDark, fontSize: 11, fontWeight: '700', textAlign: 'center' },
   mobileHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: C.paperLight, borderBottomColor: C.border, borderBottomWidth: 1 },
   backButton: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.cream },
   companyButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },

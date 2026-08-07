@@ -1,0 +1,3 @@
+-- The demo records are created by the authenticated company wizard so they can
+-- be owned by a real auth user. This file intentionally contains no anonymous
+-- tenant data and keeps `supabase db reset` deterministic.

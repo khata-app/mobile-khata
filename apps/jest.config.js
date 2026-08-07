@@ -12,10 +12,9 @@ module.exports = {
     '!**/cli/**',
   ],
   moduleFileExtensions: ['js', 'ts', 'tsx'],
-  transformIgnorePatterns: [
-    `node_modules/(?!(?:.pnpm/)?((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|@sentry/.*|native-base|react-native-svg|@gorhom/.*|@shopify/.*|@tanstack/.*|react-native-reanimated|react-native-mmkv|react-native-nitro-modules|react-native-worklets|moti|zustand|tailwind-merge|tailwind-variants|uniwind))`,
-    'node_modules/(?!.*(?:@react-navigation|react-native|expo-modules-core|expo@))',
-  ],
+  // pnpm stores Expo and React Native sources under versioned .pnpm paths.
+  // Transform all dependencies so those TypeScript sources work with Jest 29.
+  transformIgnorePatterns: [],
   coverageReporters: ['json-summary', ['text', { file: 'coverage.txt' }]],
   reporters: [
     'default',
@@ -35,6 +34,9 @@ module.exports = {
     ],
   ],
   coverageDirectory: '<rootDir>/coverage/',
+  // Supabase's auth client keeps its realtime listener alive after the suites
+  // finish; force exit only after Jest has reported every result.
+  forceExit: true,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
