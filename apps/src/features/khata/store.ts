@@ -1,12 +1,27 @@
 import { create } from 'zustand';
 import { createSelectors } from '@/lib/utils';
 import { storage } from '@/lib/storage';
-import type { Bill, Benefit, Company, Employee, Expense, InventoryItem, Sale } from './types';
+import {
+  createWorkspace,
+  insertBenefit,
+  insertBill,
+  insertExpense,
+  insertSale,
+  loadWorkspace,
+  removeEmployee as removeRemoteEmployee,
+  removeInventory as removeRemoteInventory,
+  seedDemoWorkspace,
+  updateWorkspace,
+  upsertEmployee,
+  upsertInventory,
+} from '@/lib/supabase-repository';
+import type { Bill, Benefit, Company, CompanySetup, Employee, Expense, InventoryItem, Sale } from './types';
 
+const DEMO_BUSINESS_ID = 'demo-company';
 const today = new Date().toISOString().slice(0, 10);
 
 const defaultCompany: Company = {
-  id: 'demo-company',
+  id: DEMO_BUSINESS_ID,
   name: 'Mero Kirana Pasal',
   businessType: 'Retail',
   currency: 'NPR',
@@ -45,9 +60,7 @@ const initialBenefits: Benefit[] = [
   { id: 'benefit-1', employeeId: 'employee-1', type: 'Dashain allowance', amount: 10000, date: '2026-07-20', payment: 'Bank transfer' },
 ];
 
-type Snapshot = Pick<KhataState, 'company' | 'bills' | 'inventory' | 'sales' | 'expenses' | 'employees' | 'benefits'>;
-
-type KhataState = {
+type Snapshot = {
   company: Company;
   bills: Bill[];
   inventory: InventoryItem[];
@@ -55,8 +68,15 @@ type KhataState = {
   expenses: Expense[];
   employees: Employee[];
   benefits: Benefit[];
+};
+
+type KhataState = Snapshot & {
+  businessId: string | null;
   hydrated: boolean;
-  hydrate: () => void;
+  syncing: boolean;
+  syncError: string | null;
+  hydrate: () => Promise<void>;
+  saveCompanySetup: (setup: CompanySetup) => Promise<boolean>;
   setCompany: (company: Company) => void;
   addBill: (bill: Omit<Bill, 'id'>) => void;
   addSale: (sale: Omit<Sale, 'id'>) => void;
@@ -78,11 +98,48 @@ function persist(state: KhataState) {
     employees: state.employees,
     benefits: state.benefits,
   };
-  storage.set('khata.workspace.v1', JSON.stringify(snapshot));
+  storage.set('khata.workspace.v2', JSON.stringify(snapshot));
 }
 
 function id(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function isRemoteBusiness(businessId: string | null): businessId is string {
+  return Boolean(businessId && businessId !== DEMO_BUSINESS_ID);
+}
+
+function snapshotFromRaw(raw: string | undefined): Snapshot | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<Snapshot>;
+    if (!parsed.company || !Array.isArray(parsed.bills) || !Array.isArray(parsed.inventory)) return null;
+    return {
+      company: parsed.company,
+      bills: parsed.bills,
+      inventory: parsed.inventory,
+      sales: Array.isArray(parsed.sales) ? parsed.sales : [],
+      expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
+      employees: Array.isArray(parsed.employees) ? parsed.employees : [],
+      benefits: Array.isArray(parsed.benefits) ? parsed.benefits : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function markSyncFailure(message: string) {
+  const cleanMessage = message.toLowerCase().includes('fetch') ? 'Supabase is unavailable; your entry stays on this device.' : message;
+  _useKhataStore.setState({ syncing: false, syncError: cleanMessage });
+}
+
+function runSync(task: () => Promise<void>) {
+  _useKhataStore.setState({ syncing: true, syncError: null });
+  void task().catch(error => {
+    markSyncFailure(error instanceof Error ? error.message : 'Supabase sync failed');
+  }).finally(() => {
+    if (_useKhataStore.getState().syncing) _useKhataStore.setState({ syncing: false });
+  });
 }
 
 const _useKhataStore = create<KhataState>((set, get) => ({
@@ -93,54 +150,143 @@ const _useKhataStore = create<KhataState>((set, get) => ({
   expenses: initialExpenses,
   employees: initialEmployees,
   benefits: initialBenefits,
+  businessId: null,
   hydrated: false,
-  hydrate: () => {
-    const raw = storage.getString('khata.workspace.v1');
-    if (raw) {
-      try {
-        set({ ...JSON.parse(raw) as Snapshot, hydrated: true });
-        return;
-      } catch {
-        storage.remove('khata.workspace.v1');
+  syncing: false,
+  syncError: null,
+  hydrate: async () => {
+    const local = snapshotFromRaw(storage.getString('khata.workspace.v2'));
+    if (local) set({ ...local, businessId: local.company.id === DEMO_BUSINESS_ID ? null : local.company.id });
+    try {
+      const remote = await loadWorkspace();
+      if (remote) {
+        set({ ...remote, businessId: remote.company.id, syncError: null });
       }
+    } catch (error) {
+      markSyncFailure(error instanceof Error ? error.message : 'Supabase sync failed');
+    } finally {
+      set({ hydrated: true, syncing: false });
+      persist(get());
     }
-    set({ hydrated: true });
+  },
+  saveCompanySetup: async setup => {
+    const currentBusinessId = get().businessId;
+    set({ syncing: true, syncError: null });
+    try {
+      const nextBusinessId = isRemoteBusiness(currentBusinessId)
+        ? await updateWorkspace(currentBusinessId, setup)
+        : await createWorkspace(setup);
+      const nextCompany: Company = {
+        id: nextBusinessId,
+        name: setup.name.trim() || 'My business',
+        businessType: setup.businessType,
+        currency: 'NPR',
+        pan: setup.pan,
+        city: setup.city,
+        fiscalYear: setup.fiscalYear,
+      };
+      set({ company: nextCompany, businessId: nextBusinessId, syncError: null });
+      if (!isRemoteBusiness(currentBusinessId)) {
+        const seeded = await seedDemoWorkspace(nextBusinessId, {
+          bills: get().bills,
+          inventory: get().inventory,
+          sales: get().sales,
+          expenses: get().expenses,
+          employees: get().employees,
+          benefits: get().benefits,
+        });
+        set({ ...seeded, company: nextCompany });
+      }
+      persist(get());
+      return true;
+    } catch (error) {
+      markSyncFailure(error instanceof Error ? error.message : 'Workspace could not be saved');
+      return false;
+    } finally {
+      set({ syncing: false });
+    }
   },
   setCompany: company => {
-    set({ company });
+    set({ company, businessId: company.id === DEMO_BUSINESS_ID ? null : company.id });
     persist(get());
   },
   addBill: bill => {
-    set(state => ({ bills: [{ ...bill, id: id('bill') }, ...state.bills] }));
+    const localBill = { ...bill, id: id('bill') };
+    set(state => ({ bills: [localBill, ...state.bills] }));
     persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId)) runSync(async () => {
+      const saved = await insertBill(businessId, bill);
+      set(state => ({ bills: state.bills.map(item => item.id === localBill.id ? saved : item) }));
+      persist(get());
+    });
   },
   addSale: sale => {
-    set(state => ({ sales: [{ ...sale, id: id('sale') }, ...state.sales] }));
+    const localSale = { ...sale, id: id('sale') };
+    set(state => ({ sales: [localSale, ...state.sales] }));
     persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId)) runSync(async () => {
+      const saved = await insertSale(businessId, sale);
+      set(state => ({ sales: state.sales.map(item => item.id === localSale.id ? saved : item) }));
+      persist(get());
+    });
   },
   addExpense: expense => {
-    set(state => ({ expenses: [{ ...expense, id: id('expense') }, ...state.expenses] }));
+    const localExpense = { ...expense, id: id('expense') };
+    set(state => ({ expenses: [localExpense, ...state.expenses] }));
     persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId)) runSync(async () => {
+      const saved = await insertExpense(businessId, expense);
+      set(state => ({ expenses: state.expenses.map(item => item.id === localExpense.id ? saved : item) }));
+      persist(get());
+    });
   },
   saveInventory: item => {
-    set(state => ({ inventory: item.id ? state.inventory.map(existing => existing.id === item.id ? { ...item, id: item.id! } : existing) : [{ ...item, id: id('item') }, ...state.inventory] }));
+    const localItem = { ...item, id: item.id || id('item') };
+    set(state => ({ inventory: item.id ? state.inventory.map(existing => existing.id === item.id ? localItem : existing) : [localItem, ...state.inventory] }));
     persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId)) runSync(async () => {
+      const saved = await upsertInventory(businessId, item);
+      set(state => ({ inventory: state.inventory.map(existing => existing.id === localItem.id ? saved : existing) }));
+      persist(get());
+    });
   },
-  removeInventory: itemId => {
-    set(state => ({ inventory: state.inventory.filter(item => item.id !== itemId) }));
+  removeInventory: inventoryId => {
+    set(state => ({ inventory: state.inventory.filter(item => item.id !== inventoryId) }));
     persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId) && inventoryId.length > 20) runSync(() => removeRemoteInventory(businessId, inventoryId));
   },
   saveEmployee: employee => {
-    set(state => ({ employees: employee.id ? state.employees.map(existing => existing.id === employee.id ? { ...employee, id: employee.id! } : existing) : [{ ...employee, id: id('employee') }, ...state.employees] }));
+    const localEmployee = { ...employee, id: employee.id || id('employee') };
+    set(state => ({ employees: employee.id ? state.employees.map(existing => existing.id === employee.id ? localEmployee : existing) : [localEmployee, ...state.employees] }));
     persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId)) runSync(async () => {
+      const saved = await upsertEmployee(businessId, employee);
+      set(state => ({ employees: state.employees.map(existing => existing.id === localEmployee.id ? saved : existing) }));
+      persist(get());
+    });
   },
   removeEmployee: employeeId => {
     set(state => ({ employees: state.employees.filter(employee => employee.id !== employeeId) }));
     persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId) && employeeId.length > 20) runSync(() => removeRemoteEmployee(businessId, employeeId));
   },
   saveBenefit: benefit => {
-    set(state => ({ benefits: [{ ...benefit, id: benefit.id || id('benefit') }, ...state.benefits.filter(existing => existing.id !== benefit.id)] }));
+    const localBenefit = { ...benefit, id: benefit.id || id('benefit') };
+    set(state => ({ benefits: [localBenefit, ...state.benefits.filter(existing => existing.id !== benefit.id)] }));
     persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId) && benefit.employeeId.length > 20) runSync(async () => {
+      const saved = await insertBenefit(businessId, benefit);
+      set(state => ({ benefits: state.benefits.map(existing => existing.id === localBenefit.id ? saved : existing) }));
+      persist(get());
+    });
   },
 }));
 

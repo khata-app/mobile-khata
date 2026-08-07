@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ImageBackground, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useIsFirstTime } from '@/lib/hooks';
 import { FocusAwareStatusBar, Text } from '@/components/ui';
@@ -21,7 +21,7 @@ export function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={[styles.safe, ruledPaper]}>
+        <ImageBackground source={require('../../../assets/backgrounds/himalayan-paper.webp')} imageStyle={styles.backgroundImage} style={[styles.safe, ruledPaper]}>
           <FocusAwareStatusBar />
           <View style={styles.watermark} pointerEvents="none">
             <KhataMark size={320} color={C.brick} />
@@ -52,7 +52,7 @@ export function OnboardingScreen() {
               </Pressable>
             </View>
           </View>
-        </View>
+        </ImageBackground>
       </ScrollView>
     </SafeAreaView>
   );
@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: C.cream },
   scroll: { flexGrow: 1 },
   safe: { flex: 1, backgroundColor: C.cream, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  backgroundImage: { opacity: 0.18, resizeMode: 'cover' },
   watermark: { position: 'absolute', right: -40, top: -60, opacity: 0.05 },
   content: { width: '100%', maxWidth: 520, padding: 28, alignItems: 'center', gap: 14, zIndex: 1 },
   logo: { width: 76, height: 76, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: C.brick, marginTop: 12, shadowColor: C.brickDark, shadowOpacity: 0.3, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 5 },

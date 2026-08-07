@@ -8,6 +8,20 @@ export type Company = {
   fiscalYear: string;
 };
 
+export type CompanySetup = {
+  name: string;
+  businessType: string;
+  pan: string;
+  city: string;
+  fiscalYear: string;
+  bank: string;
+  openingCash: string;
+  openingInventory: string;
+  vatRate: string;
+  inventory: boolean;
+  confirmations: boolean;
+};
+
 export type Bill = {
   id: string;
   vendor: string;
