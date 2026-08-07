@@ -1,5 +1,5 @@
 import type { LoginFormProps } from './components/login-form';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 
 import * as React from 'react';
 import { StyleSheet } from 'react-native';
@@ -12,6 +12,7 @@ import { useAuthStore } from './use-auth-store';
 
 export function LoginScreen() {
   const router = useRouter();
+  const status = useAuthStore.use.status();
   const [mode, setMode] = React.useState<'login' | 'register'>('login');
   const onSubmit: LoginFormProps['onSubmit'] = async (data) => {
     const { supabase } = await import('@/lib/supabase');
@@ -19,10 +20,16 @@ export function LoginScreen() {
       ? await supabase.auth.signUp({ email: data.email, password: data.password, options: { data: { display_name: data.name } } })
       : await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
     const { error } = result;
-    if (error) throw error;
+    if (error)
+      throw error;
     const workspace = await loadWorkspace();
     router.replace(workspace ? '/dashboard' : '/company');
   };
+
+  if (status === 'idle')
+    return null;
+  if (status === 'signIn')
+    return <Redirect href="/dashboard" />;
 
   return (
     <SafeAreaView style={styles.safe}>

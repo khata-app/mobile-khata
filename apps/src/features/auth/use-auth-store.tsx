@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { createSelectors } from '@/lib/utils';
-import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
+import { create } from 'zustand';
+import { supabase } from '@/lib/supabase';
+import { createSelectors } from '@/lib/utils';
 
 type AuthState = {
   session: Session | null;
@@ -18,7 +18,11 @@ const _useAuthStore = create<AuthState>(set => ({
     set({ status: 'signOut', session: null });
   },
   hydrate: async () => {
-    const { data } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      set({ status: 'signOut', session: null });
+      return;
+    }
     set({ status: data.session ? 'signIn' : 'signOut', session: data.session });
   },
 }));
