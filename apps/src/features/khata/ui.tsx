@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ImageBackground, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FocusAwareStatusBar, Text } from '@/components/ui';
 import { CaretDownIcon, CheckIcon, ChevronLeftIcon } from '@/features/khata/icons';
@@ -7,7 +7,7 @@ import { CaretDownIcon, CheckIcon, ChevronLeftIcon } from '@/features/khata/icon
 export { Text };
 
 export const C = {
-  cream: '#F3E9D8', ink: '#2C2115', muted: '#8A7257', border: '#DCC9A8', brick: '#8D3117', brickDark: '#6E2612', mud: '#A9714A', gold: '#B98A2F', goldDark: '#8A6A1F', green: '#5F7A4E', greenDark: '#47603A', greenLight: '#E7EDDF', red: '#A64B33', redLight: '#F6E4DC', white: '#FFFFFF', paper: '#FAF3E5', paperLight: '#FDF8EE', blueLight: '#EFF6FF', yellowLight: '#F6E9C8', line: '#1F1B16',
+  cream: '#F3E9D8', bone: '#F4EFE5', ink: '#2C2115', muted: '#8A7257', border: '#DCC9A8', brick: '#8D3117', brickDark: '#6E2612', mud: '#A9714A', gold: '#B98A2F', goldDark: '#8A6A1F', green: '#5F7A4E', greenDark: '#47603A', greenLight: '#E7EDDF', red: '#A64B33', redLight: '#F6E4DC', white: '#FFFFFF', paper: '#FAF3E5', paperLight: '#FDF8EE', blue: '#3156FF', blueLight: '#EFF6FF', orange: '#FF633C', acid: '#C8FF3D', yellowLight: '#F6E9C8', line: '#1F1B16',
 };
 
 // Serif display face for the old-ledger feel. On native 'serif' maps to the
@@ -24,7 +24,7 @@ export const ruledPaper: object = Platform.select({
 
 export function Screen({ children, scroll = true }: { children: React.ReactNode; scroll?: boolean }) {
   const content = <View style={[styles.container, ruledPaper]}>{children}</View>;
-  return <SafeAreaView style={styles.safe}><FocusAwareStatusBar />{scroll ? <ScrollView contentContainerStyle={styles.scroll}>{content}</ScrollView> : content}</SafeAreaView>;
+  return <SafeAreaView style={styles.safe}><FocusAwareStatusBar /><ImageBackground source={require('../../../assets/landing/notebook-desk.jpg')} resizeMode="cover" imageStyle={styles.backgroundImage} style={styles.background}>{scroll ? <ScrollView contentContainerStyle={styles.scroll}>{content}</ScrollView> : content}</ImageBackground></SafeAreaView>;
 }
 
 export function Eyebrow({ children }: { children: React.ReactNode }) { return <Text style={styles.eyebrow}>{children}</Text>; }
@@ -32,7 +32,7 @@ export function Title({ children, subtitle }: { children: React.ReactNode; subti
 export function Card({ children, style }: { children: React.ReactNode; style?: object }) { return <View style={[styles.card, style]}>{children}</View>; }
 export function SectionHeader({ title, detail, action }: { title: string; detail?: string; action?: React.ReactNode }) { return <View style={styles.sectionHeader}><View style={styles.sectionTitleWrap}><Text style={styles.sectionTitle}>{title}</Text>{detail && <Text style={styles.sectionDetail}>{detail}</Text>}</View>{action}</View>; }
 export function Button({ label, onPress, variant = 'primary', disabled = false, icon }: { label: string; onPress?: () => void; variant?: 'primary' | 'outline' | 'danger' | 'ghost'; disabled?: boolean; icon?: React.ReactNode }) { return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, variant === 'primary' && styles.primary, variant === 'outline' && styles.outline, variant === 'danger' && styles.danger, variant === 'ghost' && styles.ghost, pressed && styles.pressed, disabled && styles.disabled]}><View style={styles.buttonInner}>{icon}{<Text style={[styles.buttonText, variant === 'primary' && styles.primaryText, variant === 'outline' && styles.outlineText, variant === 'danger' && styles.dangerText, variant === 'ghost' && styles.ghostText]}>{label}</Text>}</View></Pressable>; }
-export function BackButton({ onPress, label = 'Back' }: { onPress?: () => void; label?: string }) { return <Pressable onPress={onPress} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><ChevronLeftIcon size={17} color={C.brick} /><Text style={styles.backText}>{label}</Text></Pressable>; }
+export function BackButton({ onPress, label }: { onPress?: () => void; label?: string }) { return <Pressable accessibilityLabel={label || 'Go back'} accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><ChevronLeftIcon size={19} color={C.brick} />{label && <Text style={styles.backText}>{label}</Text>}</Pressable>; }
 export function Select({ label, value, options, onChange, placeholder = 'Select…' }: { label: string; value: string; options: Array<{ label: string; value: string }>; onChange: (value: string) => void; placeholder?: string }) {
   const [open, setOpen] = React.useState(false);
   const selected = options.find(option => option.value === value);
@@ -63,18 +63,20 @@ export function Stat({ label, value, hint, tone = 'green' }: { label: string; va
 
 export const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.cream },
+  background: { flex: 1, backgroundColor: C.cream },
+  backgroundImage: { opacity: 0.065 },
   scroll: { paddingBottom: 36 },
-  container: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 16, gap: 16 },
+  container: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 18, gap: 16 },
   titleBlock: { gap: 5, marginBottom: 2, borderBottomColor: C.border, borderBottomWidth: 1, paddingBottom: 14 },
   eyebrow: { color: C.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
   title: { color: C.ink, fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.4, fontFamily: SERIF },
   subtitle: { color: C.muted, fontSize: 13, lineHeight: 19 },
-  card: { backgroundColor: 'rgba(253,248,238,0.94)', borderColor: C.border, borderWidth: 1, borderRadius: 12, padding: 16, gap: 10, ...Platform.select({ web: { boxShadow: '0 1px 0 rgba(110,38,18,0.06)' }, default: { shadowColor: '#6E2612', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 } }) },
+  card: { backgroundColor: 'rgba(253,248,238,0.96)', borderColor: C.border, borderWidth: 1, borderRadius: 10, padding: 16, gap: 10, ...Platform.select({ web: { boxShadow: '0 2px 0 rgba(110,38,18,0.08)' }, default: { shadowColor: '#6E2612', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 } }) },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, marginTop: 10, paddingBottom: 4, borderBottomColor: C.border, borderBottomWidth: 1 },
   sectionTitleWrap: { flex: 1, gap: 2 },
   sectionTitle: { color: C.ink, fontSize: 18, fontWeight: '800', fontFamily: SERIF, letterSpacing: -0.2 },
   sectionDetail: { color: C.muted, fontSize: 12 },
-  button: { alignItems: 'center', justifyContent: 'center', borderRadius: 10, borderColor: C.border, borderWidth: 1, minHeight: 46, paddingHorizontal: 16 },
+  button: { alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderColor: C.border, borderWidth: 1, minHeight: 44, paddingHorizontal: 16 },
   buttonInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   primary: { backgroundColor: C.brick, borderColor: C.brickDark },
   outline: { backgroundColor: 'transparent', borderColor: C.gold },
@@ -87,7 +89,7 @@ export const styles = StyleSheet.create({
   ghostText: { color: C.brick },
   pressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },
   disabled: { opacity: 0.45 },
-  field: { gap: 5, flex: 1, minWidth: 140 },
+  field: { gap: 5, flex: 1, flexBasis: 220, minWidth: 0 },
   fieldLabel: { color: C.muted, fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' },
   input: { backgroundColor: C.white, borderColor: C.border, borderWidth: 1, borderRadius: 10, minHeight: 44, paddingHorizontal: 12, color: C.ink, fontSize: 14, fontWeight: '600' },
   multiline: { minHeight: 78, paddingTop: 12, textAlignVertical: 'top' },
@@ -96,7 +98,7 @@ export const styles = StyleSheet.create({
   stat: { flex: 1, minWidth: 145, borderRadius: 12, padding: 15, gap: 7, borderTopWidth: 3, borderTopColor: C.border },
   statValue: { fontSize: 22, fontWeight: '800', fontFamily: SERIF, letterSpacing: -0.3 },
   statHint: { color: C.muted, fontSize: 11 },
-  backButton: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingVertical: 6, paddingRight: 12 },
+  backButton: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start', backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1 },
   backText: { color: C.brick, fontSize: 13, fontWeight: '800' },
   select: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   selectValue: { color: C.ink, fontSize: 14, fontWeight: '600', flex: 1 },

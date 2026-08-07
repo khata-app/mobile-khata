@@ -1,1 +1,5 @@
-export { ReportsScreen as default } from '@/features/reports/reports-screen';
+import WorkspaceScreen from '@/features/workspace/workspace-screen';
+
+export default function ReportsRoute() {
+  return <WorkspaceScreen initialSection="reports" />;
+}

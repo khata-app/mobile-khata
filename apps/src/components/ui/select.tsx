@@ -8,11 +8,10 @@ import {
 } from '@gorhom/bottom-sheet';
 import { FlashList } from '@shopify/flash-list';
 import * as React from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, useColorScheme, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { tv } from 'tailwind-variants';
 
-import { useUniwind } from 'uniwind';
 import colors from '@/components/ui/colors';
 
 import { CaretDown } from '@/components/ui/icons';
@@ -71,8 +70,7 @@ function keyExtractor(item: OptionType) {
 export function Options({ ref, options, onSelect, value, testID }: OptionsProps & { ref?: React.RefObject<BottomSheetModal | null> }) {
   const height = options.length * 70 + 100;
   const snapPoints = React.useMemo(() => [height], [height]);
-  const { theme } = useUniwind();
-  const isDark = theme === 'dark';
+  const isDark = useColorScheme() === 'dark';
 
   const renderSelectItem = React.useCallback(
     ({ item }: { item: OptionType }) => (

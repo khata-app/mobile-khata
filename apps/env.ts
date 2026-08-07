@@ -26,21 +26,21 @@ const EXPO_PUBLIC_APP_ENV = (process.env.EXPO_PUBLIC_APP_ENV
   ?? 'development') as z.infer<typeof envSchema>['EXPO_PUBLIC_APP_ENV'];
 
 const BUNDLE_IDS = {
-  development: 'com.apps/khata.development',
-  preview: 'com.apps/khata.preview',
-  production: 'com.apps/khata',
+  development: 'com.khata.app.development',
+  preview: 'com.khata.app.preview',
+  production: 'com.khata.app',
 } as const;
 
 const PACKAGES = {
-  development: 'com.apps/khata.development',
-  preview: 'com.apps/khata.preview',
-  production: 'com.apps/khata',
+  development: 'com.khata.app.development',
+  preview: 'com.khata.app.preview',
+  production: 'com.khata.app',
 } as const;
 
 const SCHEMES = {
-  development: 'apps/khata',
-  preview: 'apps/khata.preview',
-  production: 'apps/khata',
+  development: 'khata',
+  preview: 'khata.preview',
+  production: 'khata',
 } as const;
 
 const NAME = 'Khata';
