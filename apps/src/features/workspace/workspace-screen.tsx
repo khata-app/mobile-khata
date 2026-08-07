@@ -1,13 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { AppState, Modal, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, BackHandler, Modal, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
 import { useAuthStore as useAuth } from '@/features/auth/use-auth-store';
 import DashboardScreen from '@/features/dashboard/dashboard-screen';
 import { KhataLogo } from '@/features/khata/brand';
 import { BarChartIcon, BoxIcon, BuildingIcon, BuyIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CoinsIcon, FileTextIcon, GearIcon, GridIcon, HomeIcon, LogOutIcon, ReceiptIcon, SellIcon, UsersIcon } from '@/features/khata/icons';
 import { useKhataStore } from '@/features/khata/store';
-import { C, SERIF } from '@/features/khata/ui';
+import { C, SERIF, WorkspaceScreenProvider } from '@/features/khata/ui';
 import ReportsScreen from '@/features/reports/reports-screen';
 import SettingsScreen from '@/features/settings/settings-screen';
 import { InventoryPanel } from './inventory-panel';
@@ -41,12 +41,17 @@ export function WorkspaceScreen({ initialSection = 'dashboard' }: { initialSecti
   const desktop = Platform.OS === 'web' && width >= 900;
   const requestedSection = nav.some(item => item.id === params.section) ? params.section as Section : initialSection;
   const [section, setSection] = useState<Section>(requestedSection);
+  const history = useRef<Section[]>([requestedSection]);
+  const lastRequestedSection = useRef(requestedSection);
+  const scrollOffsets = useRef<Record<string, number>>({});
+  const updateScrollOffset = useCallback((key: string, offset: number) => {
+    scrollOffsets.current[key] = offset;
+  }, []);
   const hydrate = useKhataStore.use.hydrate();
   const refresh = useKhataStore.use.refresh();
   const hydrated = useKhataStore.use.hydrated();
   const syncing = useKhataStore.use.syncing();
   const syncError = useKhataStore.use.syncError();
-  const businessId = useKhataStore.use.businessId();
   const company = useKhataStore.use.company();
   const bills = useKhataStore.use.bills();
   const inventory = useKhataStore.use.inventory();
@@ -59,7 +64,13 @@ export function WorkspaceScreen({ initialSection = 'dashboard' }: { initialSecti
     if (!hydrated)
       void hydrate();
   }, [hydrate, hydrated]);
-  useEffect(() => { setSection(requestedSection); }, [requestedSection]);
+  useEffect(() => {
+    if (lastRequestedSection.current !== requestedSection) {
+      lastRequestedSection.current = requestedSection;
+      history.current = [requestedSection];
+      setSection(requestedSection);
+    }
+  }, [requestedSection]);
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active' && hydrated)
@@ -68,13 +79,38 @@ export function WorkspaceScreen({ initialSection = 'dashboard' }: { initialSecti
     return () => subscription.remove();
   }, [hydrated, refresh]);
 
-  const navigate = (next: string) => {
-    setSection(next as Section);
-  };
+  const navigate = useCallback((next: string) => {
+    if (!nav.some(item => item.id === next))
+      return;
+    const nextSection = next as Section;
+    if (history.current.at(-1) === nextSection)
+      return;
+    history.current = [...history.current, nextSection];
+    setSection(nextSection);
+  }, []);
 
-  const syncLabel = syncing ? 'Syncing changes…' : syncError ? 'Offline · will retry' : businessId ? 'Synced securely' : 'Local demo data';
+  const goBack = useCallback(() => {
+    if (history.current.length > 1) {
+      history.current = history.current.slice(0, -1);
+      setSection(history.current.at(-1) as Section);
+      return true;
+    }
+    if (router.canGoBack()) {
+      router.back();
+      return true;
+    }
+    return false;
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android')
+      return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', goBack);
+    return () => subscription.remove();
+  }, [goBack]);
+
   const content = section === 'dashboard'
-    ? <DashboardScreen bills={bills} inventory={inventory} sales={sales} expenses={expenses} employees={employees} benefits={benefits} syncLabel={syncLabel} onNavigate={navigate} />
+    ? <DashboardScreen bills={bills} inventory={inventory} sales={sales} expenses={expenses} employees={employees} benefits={benefits} onNavigate={navigate} />
     : section === 'purchase-scan'
       ? <PurchasePanel onNavigate={navigate} />
       : section === 'sales-scan'
@@ -92,6 +128,7 @@ export function WorkspaceScreen({ initialSection = 'dashboard' }: { initialSecti
                   : section === 'reports'
                     ? <ReportsScreen onNavigate={navigate} />
                     : <SettingsScreen onNavigate={navigate} />;
+  const workspaceContent = <WorkspaceScreenProvider section={section} refreshing={syncing} refresh={refresh} scrollOffset={scrollOffsets.current[section] || 0} onScrollOffsetChange={offset => updateScrollOffset(section, offset)}>{content}</WorkspaceScreenProvider>;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -104,17 +141,17 @@ export function WorkspaceScreen({ initialSection = 'dashboard' }: { initialSecti
                 <View style={styles.desktopContent}>
                   {syncing && <SyncBanner text="Saving this workspace securely…" tone="pending" />}
                   {syncError && <SyncBanner text={syncError} tone="error" />}
-                  {content}
+                  {workspaceContent}
                 </View>
               </View>
             )
           : (
               <>
-                <MobileHeader active={section} onNavigate={navigate} company={company.name} />
+                <MobileHeader active={section} onNavigate={navigate} onBack={goBack} company={company.name} />
                 <View style={styles.mobileContent}>
                   {syncing && <SyncBanner text="Syncing securely…" tone="pending" />}
                   {syncError && <SyncBanner text={syncError} tone="error" />}
-                  {content}
+                  {workspaceContent}
                 </View>
                 <MobileNavigation active={section} onNavigate={navigate} />
               </>
@@ -174,12 +211,12 @@ function NavButton({ item, active, onPress }: { item: (typeof nav)[number]; acti
   );
 }
 
-function MobileHeader({ active, onNavigate, company }: { active: Section; onNavigate: (section: string) => void; company: string }) {
+function MobileHeader({ active, onNavigate, onBack, company }: { active: Section; onNavigate: (section: string) => void; onBack: () => boolean; company: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const sectionLabel = nav.find(item => item.id === active)?.label || 'Overview';
   return (
     <View style={styles.mobileHeader}>
-      {active !== 'dashboard' && <Pressable accessibilityLabel="Back to overview" onPress={() => onNavigate('dashboard')} style={styles.backButton}><ChevronLeftIcon size={20} color={C.ink} /></Pressable>}
+      {active !== 'dashboard' && <Pressable accessibilityLabel="Go back" onPress={onBack} style={styles.backButton}><ChevronLeftIcon size={20} color={C.ink} /></Pressable>}
       <Brand compact onPress={() => Platform.OS === 'web' ? router.replace('/') : onNavigate('dashboard')} />
       <View style={styles.mobileHeaderCopy}>
         <Text style={styles.mobileCompany} numberOfLines={1}>{company}</Text>

@@ -1,8 +1,8 @@
 import type { Benefit, Bill, Employee, Expense, InventoryItem, Sale } from '@/features/khata/types';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { AlertTriangleIcon, ArrowRightIcon, BarChartIcon, BoxIcon, BuyIcon, CameraIcon, CheckCircleIcon, CoinsIcon, FileTextIcon, GearIcon, ReceiptIcon, SellIcon, UsersIcon } from '@/features/khata/icons';
-import { C, Card, Chip, Eyebrow, Screen, SectionHeader, SERIF, Text, Title } from '@/features/khata/ui';
+import { AlertTriangleIcon, ArrowRightIcon, BarChartIcon, BoxIcon, BuyIcon, CameraIcon, CoinsIcon, FileTextIcon, GearIcon, ReceiptIcon, SellIcon, UsersIcon } from '@/features/khata/icons';
+import { C, Card, Eyebrow, Screen, SectionHeader, SERIF, Text, Title } from '@/features/khata/ui';
 
 type Props = {
   bills: Bill[];
@@ -11,13 +11,12 @@ type Props = {
   expenses: Expense[];
   employees: Employee[];
   benefits: Benefit[];
-  syncLabel?: string;
   onNavigate: (section: string) => void;
 };
 
 const money = (value: number) => `NPR ${Math.round(value).toLocaleString()}`;
 
-export function DashboardScreen({ bills, inventory, sales, expenses, employees, benefits, syncLabel = 'Saved on this device', onNavigate }: Props) {
+export function DashboardScreen({ bills, inventory, sales, expenses, employees, benefits, onNavigate }: Props) {
   const { width } = useWindowDimensions();
   const compact = width < 640;
   const month = new Date().toISOString().slice(0, 7);
@@ -61,7 +60,6 @@ export function DashboardScreen({ bills, inventory, sales, expenses, employees, 
           <Eyebrow>{displayDate}</Eyebrow>
           <Title subtitle="Sales, purchases and stock—right where you need them.">Good morning</Title>
         </View>
-        <Chip tone="green" icon={<CheckCircleIcon size={12} color={C.green} />}>{syncLabel}</Chip>
       </View>
 
       <Pressable onPress={() => onNavigate('purchase-scan')} style={({ pressed }) => [styles.scanHero, compact && styles.scanHeroCompact, pressed && styles.pressed]}>
@@ -77,9 +75,9 @@ export function DashboardScreen({ bills, inventory, sales, expenses, employees, 
         <ArrowRightIcon size={22} color={C.brickDark} />
       </Pressable>
 
-      <View style={[styles.primaryActions, compact && styles.primaryActionsCompact]}>
-        <MainAction label="Buy" detail="Scan or enter a purchase" icon={BuyIcon} tone="brick" onPress={() => onNavigate('purchase-scan')} />
-        <MainAction label="Sell" detail="Scan or record a sale" icon={SellIcon} tone="green" onPress={() => onNavigate('sales-scan')} />
+      <View style={styles.primaryActions}>
+        <MainAction compact={compact} label="Buy" detail="Scan or enter a purchase" icon={BuyIcon} tone="brick" onPress={() => onNavigate('purchase-scan')} />
+        <MainAction compact={compact} label="Sell" detail="Scan or record a sale" icon={SellIcon} tone="green" onPress={() => onNavigate('sales-scan')} />
       </View>
 
       <View style={styles.summary}>
@@ -147,13 +145,13 @@ export function DashboardScreen({ bills, inventory, sales, expenses, employees, 
   );
 }
 
-function MainAction({ label, detail, icon: Icon, tone, onPress }: { label: string; detail: string; icon: typeof BuyIcon; tone: 'brick' | 'green'; onPress: () => void }) {
+function MainAction({ compact, label, detail, icon: Icon, tone, onPress }: { compact: boolean; label: string; detail: string; icon: typeof BuyIcon; tone: 'brick' | 'green'; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.mainAction, tone === 'green' && styles.mainActionGreen, pressed && styles.pressed]}>
-      <View style={styles.mainActionIcon}><Icon size={29} color={tone === 'green' ? C.greenDark : C.brickDark} /></View>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.mainAction, compact && styles.mainActionCompact, tone === 'green' && styles.mainActionGreen, pressed && styles.pressed]}>
+      <View style={[styles.mainActionIcon, compact && styles.mainActionIconCompact]}><Icon size={compact ? 23 : 29} color={tone === 'green' ? C.greenDark : C.brickDark} /></View>
       <View style={styles.mainActionCopy}>
-        <Text style={styles.mainActionTitle}>{label}</Text>
-        <Text style={styles.mainActionDetail}>{detail}</Text>
+        <Text style={[styles.mainActionTitle, compact && styles.mainActionTitleCompact]}>{label}</Text>
+        <Text style={[styles.mainActionDetail, compact && styles.mainActionDetailCompact]}>{detail}</Text>
       </View>
       <ArrowRightIcon size={19} color={tone === 'green' ? C.greenDark : C.brickDark} />
     </Pressable>
@@ -181,13 +179,16 @@ const styles = StyleSheet.create({
   scanTitle: { color: C.ink, fontSize: 24, lineHeight: 29, fontWeight: '800', fontFamily: SERIF, marginTop: 5 },
   scanText: { color: C.muted, fontSize: 12, lineHeight: 18, marginTop: 4 },
   primaryActions: { flexDirection: 'row', gap: 10 },
-  primaryActionsCompact: { flexDirection: 'column' },
   mainAction: { flex: 1, minHeight: 88, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 15, backgroundColor: C.redLight, borderColor: C.mud, borderWidth: 1, borderRadius: 10 },
+  mainActionCompact: { minHeight: 78, gap: 7, padding: 10 },
   mainActionGreen: { backgroundColor: C.greenLight, borderColor: C.green },
   mainActionIcon: { width: 45, height: 45, alignItems: 'center', justifyContent: 'center', borderRadius: 16, borderColor: 'rgba(44,33,21,0.15)', borderWidth: 1, transform: [{ rotate: '2deg' }] },
+  mainActionIconCompact: { width: 35, height: 35, borderRadius: 12 },
   mainActionCopy: { flex: 1 },
   mainActionTitle: { color: C.ink, fontSize: 21, fontWeight: '800', fontFamily: SERIF },
+  mainActionTitleCompact: { fontSize: 18 },
   mainActionDetail: { color: C.muted, fontSize: 11, marginTop: 3 },
+  mainActionDetailCompact: { fontSize: 9, lineHeight: 12 },
   summary: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: C.ink, borderRadius: 9, padding: 1, gap: 1, overflow: 'hidden' },
   summaryItem: { flex: 1, minWidth: 145, minHeight: 83, justifyContent: 'center', padding: 13, backgroundColor: '#3A2B1D' },
   summaryLabel: { color: 'rgba(250,243,229,0.63)', fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },

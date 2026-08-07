@@ -10,6 +10,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useThemeConfig } from '@/components/ui/use-theme-config';
 import { hydrateAuth, useAuthStore } from '@/features/auth/use-auth-store';
+import { useKhataStore } from '@/features/khata/store';
+import { KhataRefreshProvider } from '@/features/khata/ui';
 
 import { APIProvider } from '@/lib/api';
 // Import  global CSS file
@@ -57,6 +59,8 @@ export default function RootLayout() {
 
 function Providers({ children }: { children: React.ReactNode }) {
   const theme = useThemeConfig();
+  const refresh = useKhataStore.use.refresh();
+  const syncing = useKhataStore.use.syncing();
   return (
     <GestureHandlerRootView
       style={styles.container}
@@ -66,10 +70,12 @@ function Providers({ children }: { children: React.ReactNode }) {
       <KeyboardProvider>
         <ThemeProvider value={theme}>
           <APIProvider>
-            <BottomSheetModalProvider>
-              {children}
-              <FlashMessage position="top" />
-            </BottomSheetModalProvider>
+            <KhataRefreshProvider refreshing={syncing} refresh={refresh}>
+              <BottomSheetModalProvider>
+                {children}
+                <FlashMessage position="top" />
+              </BottomSheetModalProvider>
+            </KhataRefreshProvider>
           </APIProvider>
         </ThemeProvider>
       </KeyboardProvider>
