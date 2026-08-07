@@ -3,11 +3,9 @@ import * as React from 'react';
 import { useCallback, useEffect } from 'react';
 
 import { useAuthStore as useAuth } from '@/features/auth/use-auth-store';
-import { useIsFirstTime } from '@/lib/hooks/use-is-first-time';
 
 export default function AppLayout() {
   const status = useAuth.use.status();
-  const [isFirstTime] = useIsFirstTime();
   const hideSplash = useCallback(async () => {
     await SplashScreen.hideAsync();
   }, []);
@@ -20,14 +18,12 @@ export default function AppLayout() {
     }
   }, [hideSplash, status]);
 
-  if (isFirstTime) {
-    return <Redirect href="/onboarding" />;
-  }
+  if (status === 'idle') return null;
   if (status === 'signOut') {
     return <Redirect href="/login" />;
   }
   return <Stack screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="index" />
+    <Stack.Screen name="dashboard" />
     <Stack.Screen name="reports" />
     <Stack.Screen name="settings" />
   </Stack>;

@@ -5,7 +5,8 @@ import * as z from 'zod';
 import { Button, Input } from '@/components/ui';
 import { getFieldError } from '@/components/ui/form-utils';
 import { C, SERIF, Text, ruledPaper } from '@/features/khata/ui';
-import { AlertTriangleIcon, EyeIcon, EyeOffIcon, KhataMark, LockIcon, MailIcon, UserIcon } from '@/features/khata/icons';
+import { AlertTriangleIcon, EyeIcon, EyeOffIcon, LockIcon, MailIcon, UserIcon } from '@/features/khata/icons';
+import { KhataLogo } from '@/features/khata/brand';
 
 const getErrorMessage = (error: unknown) => {
   if (!error) return 'Something went wrong. Please try again.';
@@ -54,9 +55,7 @@ export function LoginForm({ onSubmit = async () => {}, mode = 'login', onModeCha
       >
         <View style={styles.content}>
           <View style={styles.brandRow}>
-            <View style={styles.logo}>
-              <KhataMark size={26} color={C.white} />
-            </View>
+            <KhataLogo size={52} />
             <View>
               <Text style={styles.brandName}>Khata</Text>
               <Text style={styles.brandTag}>Nepal accounting workspace</Text>
@@ -193,19 +192,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
-  logo: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.brick,
-    shadowColor: C.brickDark,
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
   brandName: { color: C.ink, fontSize: 24, fontWeight: '800', fontFamily: SERIF, letterSpacing: -0.3 },
   brandTag: { color: C.muted, fontSize: 11, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.6 },
   chip: {

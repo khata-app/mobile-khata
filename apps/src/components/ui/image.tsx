@@ -2,13 +2,10 @@
 import type { ImageProps } from 'expo-image';
 import { Image as NImage } from 'expo-image';
 import * as React from 'react';
-import { withUniwind } from 'uniwind';
 
 export type ImgProps = ImageProps & {
   className?: string;
 };
-
-const StyledImage = withUniwind(NImage);
 
 export function Image({
   style,
@@ -17,7 +14,7 @@ export function Image({
   ...props
 }: ImgProps) {
   return (
-    <StyledImage
+    <NImage
       className={className}
       placeholder={placeholder}
       style={style}

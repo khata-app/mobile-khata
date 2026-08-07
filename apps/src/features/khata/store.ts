@@ -28,6 +28,7 @@ const defaultCompany: Company = {
   pan: '604812345',
   city: 'Kathmandu',
   fiscalYear: '2082/83',
+  vatRate: 13,
 };
 
 const initialBills: Bill[] = [
@@ -76,6 +77,7 @@ type KhataState = Snapshot & {
   syncing: boolean;
   syncError: string | null;
   hydrate: () => Promise<void>;
+  refresh: () => Promise<void>;
   saveCompanySetup: (setup: CompanySetup) => Promise<boolean>;
   setCompany: (company: Company) => void;
   addBill: (bill: Omit<Bill, 'id'>) => void;
@@ -169,6 +171,22 @@ const _useKhataStore = create<KhataState>((set, get) => ({
       persist(get());
     }
   },
+  refresh: async () => {
+    const currentBusinessId = get().businessId;
+    if (!isRemoteBusiness(currentBusinessId)) return;
+    set({ syncing: true, syncError: null });
+    try {
+      const remote = await loadWorkspace();
+      if (remote && remote.company.id === currentBusinessId) {
+        set({ ...remote, businessId: currentBusinessId, syncError: null });
+        persist(get());
+      }
+    } catch (error) {
+      markSyncFailure(error instanceof Error ? error.message : 'Supabase sync failed');
+    } finally {
+      set({ syncing: false });
+    }
+  },
   saveCompanySetup: async setup => {
     const currentBusinessId = get().businessId;
     set({ syncing: true, syncError: null });
@@ -184,6 +202,7 @@ const _useKhataStore = create<KhataState>((set, get) => ({
         pan: setup.pan,
         city: setup.city,
         fiscalYear: setup.fiscalYear,
+        vatRate: Number(setup.vatRate) || 13,
       };
       set({ company: nextCompany, businessId: nextBusinessId, syncError: null });
       if (!isRemoteBusiness(currentBusinessId)) {

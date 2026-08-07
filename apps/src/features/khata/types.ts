@@ -6,6 +6,7 @@ export type Company = {
   pan?: string;
   city?: string;
   fiscalYear: string;
+  vatRate?: number;
 };
 
 export type CompanySetup = {

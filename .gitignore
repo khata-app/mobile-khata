@@ -15,10 +15,14 @@ android/.gradle/
 android/local.properties
 ios/Pods/
 ios/build/
+apps/android/
+apps/ios/
 
 # Test and build output
 coverage/
 *.tsbuildinfo
+*.apk
+*.aab
 
 # Caches
 .cache/

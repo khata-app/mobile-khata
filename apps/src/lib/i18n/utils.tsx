@@ -15,7 +15,14 @@ export type TxKeyPath = RecursiveKeyOf<DefaultLocale>;
 
 export const LOCAL = 'local';
 
-export const getLanguage = () => storage.getString(LOCAL); // 'Marc' getItem<Language | undefined>(LOCAL);
+export const getLanguage = () => {
+  // Static web rendering has no MMKV instance. Use the i18next fallback there;
+  // the persisted language is read once the client is running.
+  if (typeof window === 'undefined')
+    return undefined;
+
+  return storage.getString(LOCAL); // 'Marc' getItem<Language | undefined>(LOCAL);
+};
 
 export const translate = memoize(
   (key: TxKeyPath, options = undefined) =>

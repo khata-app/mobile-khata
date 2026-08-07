@@ -6,6 +6,7 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FocusAwareStatusBar } from '@/components/ui';
 import { C } from '@/features/khata/ui';
+import { loadWorkspace } from '@/lib/supabase-repository';
 import { LoginForm } from './components/login-form';
 import { useAuthStore } from './use-auth-store';
 
@@ -19,7 +20,8 @@ export function LoginScreen() {
       : await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
     const { error } = result;
     if (error) throw error;
-    router.replace('/company');
+    const workspace = await loadWorkspace();
+    router.replace(workspace ? '/dashboard' : '/company');
   };
 
   return (

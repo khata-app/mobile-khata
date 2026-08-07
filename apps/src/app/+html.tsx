@@ -10,10 +10,10 @@ export default function Root({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <title>Khata</title>
+        <title>Khata · Digitalizing small and medium scale businesses</title>
         <meta name="application-name" content="Khata" />
         <meta name="theme-color" content="#6E2612" />
-        <meta name="description" content="A calm, practical accounting workspace for growing businesses." />
+        <meta name="description" content="Khata is a calm, practical accounting workspace for Nepal's small and medium scale businesses." />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
         {/*

@@ -6,6 +6,7 @@ import { useIsFirstTime } from '@/lib/hooks';
 import { FocusAwareStatusBar, Text } from '@/components/ui';
 import { Button, C, SERIF, ruledPaper } from '@/features/khata/ui';
 import { BarChartIcon, BookIcon, KhataMark, LockIcon, ZapIcon } from '@/features/khata/icons';
+import { KhataLogo } from '@/features/khata/brand';
 
 const features = [
   { icon: BookIcon, label: 'Sales, purchases and expenses in one place' },
@@ -27,9 +28,7 @@ export function OnboardingScreen() {
             <KhataMark size={320} color={C.brick} />
           </View>
           <View style={styles.content}>
-            <View style={styles.logo}>
-              <KhataMark size={34} color={C.white} />
-            </View>
+            <KhataLogo size={76} />
             <View style={styles.eyebrow}>
               <Text style={styles.eyebrowText}>Nepal SME accounting workspace</Text>
             </View>

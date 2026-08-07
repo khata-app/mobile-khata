@@ -53,6 +53,10 @@ function requiredId(value: unknown, message: string) {
   return id;
 }
 
+function isUuid(value: string | undefined) {
+  return Boolean(value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value));
+}
+
 export type WorkspaceData = {
   company: Company;
   bills: Bill[];
@@ -108,7 +112,7 @@ export async function loadWorkspace(): Promise<WorkspaceData | null> {
   if (!isSupabaseConfigured) return null;
   const membershipResult = await supabase
     .from('business_memberships')
-    .select('business_id, businesses(id, name, business_type, currency_code, pan_number, business_addresses(city), business_settings(fiscal_year_label))')
+    .select('business_id, businesses(id, name, business_type, currency_code, pan_number, business_addresses(city), business_settings(fiscal_year_label, vat_rate))')
     .order('created_at', { ascending: true })
     .limit(1);
   if (membershipResult.error) throw new Error(errorMessage(membershipResult.error));
@@ -127,6 +131,7 @@ export async function loadWorkspace(): Promise<WorkspaceData | null> {
     pan: stringValue(business.pan_number),
     city: stringValue(address.city, 'Kathmandu'),
     fiscalYear: stringValue(settings.fiscal_year_label, '2082/83'),
+    vatRate: numberValue(settings.vat_rate, 13),
   };
 
   const [billsResult, inventoryResult, salesResult, expensesResult, employeesResult, benefitsResult] = await Promise.all([
@@ -270,7 +275,7 @@ export async function upsertInventory(businessId: string, item: Omit<InventoryIt
     purchase_cost_paisa: paisa(item.purchaseCost),
     selling_price_paisa: paisa(item.sellingPrice),
   };
-  const query = item.id && item.id.length > 20
+  const query = isUuid(item.id)
     ? supabase.from('inventory_items').update(payload).eq('id', item.id).eq('business_id', businessId).select('id').single()
     : supabase.from('inventory_items').insert(payload).select('id').single();
   const { data, error } = await query;
@@ -285,7 +290,7 @@ export async function removeInventory(businessId: string, id: string) {
 
 export async function upsertEmployee(businessId: string, employee: Omit<Employee, 'id'> & { id?: string }) {
   const payload = { business_id: businessId, name: employee.name, department: employee.department, phone: employee.phone, status: employee.status, salary_paisa: paisa(employee.salary) };
-  const query = employee.id && employee.id.length > 20
+  const query = isUuid(employee.id)
     ? supabase.from('employees').update(payload).eq('id', employee.id).eq('business_id', businessId).select('id').single()
     : supabase.from('employees').insert(payload).select('id').single();
   const { data, error } = await query;
@@ -300,7 +305,7 @@ export async function removeEmployee(businessId: string, id: string) {
 
 export async function insertBenefit(businessId: string, benefit: Omit<Benefit, 'id'> & { id?: string }) {
   const payload = { business_id: businessId, employee_id: benefit.employeeId, benefit_type: benefit.type, amount_paisa: paisa(benefit.amount), benefit_date: benefit.date, payment_method: benefit.payment, created_by: await currentUserId() };
-  const query = benefit.id && benefit.id.length > 20
+  const query = isUuid(benefit.id)
     ? supabase.from('employee_benefits').update(payload).eq('id', benefit.id).eq('business_id', businessId).select('id').single()
     : supabase.from('employee_benefits').insert(payload).select('id').single();
   const { data, error } = await query;

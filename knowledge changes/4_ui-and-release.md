@@ -3,11 +3,19 @@
 - Added the generated `apps/assets/backgrounds/himalayan-paper.webp` (1200×800, about 34 KB) as a low-opacity onboarding background; it stays behind the rustic notebook UI.
 - Company page keeps the existing ledger/notebook visual language while exposing the full three-step setup and Supabase-backed save state.
 - Dashboard badge now distinguishes demo, syncing, Supabase-synced, and offline states.
-- Updated README with dev/staging branch links, hosted URL targets, Supabase/Edge setup, and end-to-end flow.
-- Added `dev` locally and document the intended `staging` branch; both are pushed after verification.
+- Updated README with the GitHub Pages URL, the `dev` → `main` release flow, Supabase/Edge setup, Android build steps, and end-to-end flow.
+- The public landing page is the default route; authenticated users with an existing company go straight to that workspace.
+- Added generated notebook, shop, ledger and community imagery plus a generated app mark for web, Android and splash surfaces.
+- Reworked mobile navigation into Home, Buy, Sell and Stock with the remaining workspace actions in the header menu.
+- Settings now refreshes Supabase data, links to company/team/reports, and persists light/system/dark preference choices.
 - TypeScript: passes.
 - Web export: passes (`apps/dist`, ignored build output).
-- Jest: 42 tests pass after making the pnpm/Expo transform rule handle versioned `.pnpm` sources; `forceExit` only prevents the existing Supabase/auth listener from keeping Jest alive.
+- Jest: 45 tests pass after making the pnpm/Expo transform rule handle versioned `.pnpm` sources; `forceExit` only prevents the existing Supabase/auth listener from keeping Jest alive.
 - Lint is blocked in this container by Node 20.19.4; the repo requires Node 22 and ESLint currently calls `Object.groupBy`.
 - Local Supabase lint was attempted, but the CLI could not finish pulling the Docker stack in the available run; run `supabase start && supabase db lint --local` on a machine with the images cached.
 - Linked remote project `jtemvftvslhsexsdwzjp` now has migrations 0001–0006 applied and `scan-bill` is active. `GEMINI_API_KEY` is intentionally not set because no key was available in the environment.
+- Rebuilt the public landing page as a responsive, dark editorial surface with generated 3D paper art for web/mobile, generated local-shop team photography, restrained texture use, entrance motion, and the motto “Digitalizing small and medium scale businesses.” Web uses the landing route; native root redirects to sign-in so the marketing page never appears in the mobile app.
+- The workspace shell now keeps Reports and Settings inside the same mobile header/bottom navigation; the logo returns to the web landing page, and the mobile menu exposes Reports without a second full-screen shell.
+- Dashboard now puts sales, gross profit, cash movement, and stock value first, followed by quick actions, attention items, and recent activity. Inventory starts with the product register and a compact stock strip; the add/edit form is opened only when needed. Buy capture and document review are separate states, and sales can optionally reduce a selected inventory item.
+- Reports now calculate day book, balanced trial balance, profit and loss, balance sheet, VAT summary, and stock report from the normalized workspace records. Each view supports all-time/month filters and PDF print/share or Excel-compatible CSV export. VAT reads the workspace VAT rate and purchase VAT values.
+- Jest now passes 45 tests, including report calculation and export-row coverage. TypeScript and static web export pass. The existing act warnings in the auth form tests remain non-fatal. Android dependencies are pinned to Expo SDK 54-compatible versions after the earlier screens codegen failure; a constrained single-architecture Gradle build now succeeds and produces the ignored debug APK at `apps/android/app/build/outputs/apk/debug/app-debug.apk` (SHA-256 `81d2fa67015a36e44eeb973293eadf551a564c3e6a885ff43394468a9188f16a`).
