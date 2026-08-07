@@ -59,6 +59,8 @@ pnpm --dir apps android:preview
 
 The generated debug APK is written under `apps/android/app/build/outputs/apk/` and is ignored by git.
 
+[Download the latest debug APK](./app-debug.apk)
+
 ## Quality checks
 
 ```bash
