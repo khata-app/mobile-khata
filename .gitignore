@@ -21,7 +21,6 @@ apps/ios/
 # Test and build output
 coverage/
 *.tsbuildinfo
-*.apk
 *.aab
 
 # Caches
