@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
+import { createClient, processLock } from '@supabase/supabase-js';
+import { AppState, Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -28,9 +28,24 @@ export const supabase = isServer
   ? serverClient
   : createClient(url ?? 'https://invalid.local', publishableKey ?? 'missing-key', {
       auth: {
-        storage: AsyncStorage,
+        ...(Platform.OS !== 'web' ? { storage: AsyncStorage } : {}),
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true,
+        detectSessionInUrl: Platform.OS === 'web',
+        lock: processLock,
       },
     });
+
+// Supabase can only refresh an Android/iOS session reliably when it knows
+// whether the app is active. Register this once, alongside the singleton client.
+if (!isServer && isSupabaseConfigured && Platform.OS !== 'web') {
+  if (AppState.currentState === 'active')
+    supabase.auth.startAutoRefresh();
+
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active')
+      supabase.auth.startAutoRefresh();
+    else
+      supabase.auth.stopAutoRefresh();
+  });
+}

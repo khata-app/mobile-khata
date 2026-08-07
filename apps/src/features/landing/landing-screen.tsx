@@ -59,8 +59,8 @@ export function LandingScreen() {
                 </Pressable>
                 <View style={styles.marginNote}><Text style={styles.marginNoteText}>English · Light mode · NPR</Text></View>
               </View>
-              <View style={styles.heroVisual}>
-                <Image source={shelf} resizeMode="cover" style={styles.heroImage} />
+              <View style={[styles.heroVisual, mobile && styles.heroVisualMobile]}>
+                <Image source={shelf} resizeMode="cover" style={[styles.heroImage, mobile && styles.heroImageMobile]} />
                 <View style={styles.paperSlip}>
                   <ReceiptIcon size={21} color={C.brick} />
                   <Text style={styles.slipTitle}>Today’s book</Text>
@@ -80,7 +80,8 @@ export function LandingScreen() {
             </View>
             <View style={styles.featureGrid}>
               {features.map((feature, index) => {
-                const Icon = feature.icon; return (
+                const Icon = feature.icon;
+                return (
                   <View key={feature.title} style={styles.feature}>
                     <View style={[styles.sketchIcon, index % 2 === 0 && styles.sketchIconTilt]}><Icon size={25} color={C.brickDark} /></View>
                     <Text style={styles.featureTitle}>{feature.title}</Text>
@@ -95,7 +96,7 @@ export function LandingScreen() {
             </View>
 
             <View style={[styles.story, mobile && styles.storyMobile]}>
-              <Image source={community} resizeMode="cover" style={styles.storyImage} />
+              <Image source={community} resizeMode="cover" style={[styles.storyImage, mobile && styles.storyImageMobile]} />
               <View style={styles.storyCopy}>
                 <Text style={styles.handNote}>Built around real work</Text>
                 <Text style={styles.storyTitle}>Useful at opening time. Useful at closing time.</Text>
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
   brandNote: { color: C.muted, fontSize: 10, marginTop: 1, letterSpacing: 0.5 },
   signIn: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 15, backgroundColor: C.brick, borderRadius: 7, borderColor: C.brickDark, borderWidth: 1 },
   signInText: { color: C.paperLight, fontSize: 13, fontWeight: '800' },
-  hero: { minHeight: 590, flexDirection: 'row', alignItems: 'center', gap: 48, paddingVertical: 58 },
+  hero: { minHeight: 520, flexDirection: 'row', alignItems: 'center', gap: 48, paddingVertical: 48 },
   heroMobile: { minHeight: 0, flexDirection: 'column', alignItems: 'stretch', gap: 34, paddingTop: 42, paddingBottom: 46 },
   heroCopy: { flex: 1, alignItems: 'flex-start' },
   kicker: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 20 },
@@ -150,8 +151,10 @@ const styles = StyleSheet.create({
   primaryText: { color: C.paperLight, fontSize: 14, fontWeight: '800' },
   marginNote: { marginTop: 18, borderBottomColor: C.gold, borderBottomWidth: 1, paddingBottom: 3, transform: [{ rotate: '-1deg' }] },
   marginNoteText: { color: C.muted, fontSize: 11, fontFamily: SERIF, fontStyle: 'italic' },
-  heroVisual: { flex: 0.82, minHeight: 410, position: 'relative', justifyContent: 'center' },
-  heroImage: { width: '100%', height: 370, borderRadius: 5, borderColor: C.ink, borderWidth: 1, transform: [{ rotate: '1.2deg' }] },
+  heroVisual: { flex: 0.72, maxWidth: 430, minHeight: 340, position: 'relative', justifyContent: 'center' },
+  heroVisualMobile: { width: '100%', maxWidth: 480, minHeight: 290, alignSelf: 'center' },
+  heroImage: { width: '100%', height: 300, borderRadius: 5, borderColor: C.ink, borderWidth: 1, transform: [{ rotate: '1.2deg' }] },
+  heroImageMobile: { height: 250 },
   paperSlip: { position: 'absolute', left: -14, bottom: 12, width: 230, padding: 17, backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1, transform: [{ rotate: '-2.5deg' }] },
   slipTitle: { color: C.ink, fontSize: 18, fontWeight: '800', fontFamily: SERIF, marginTop: 8 },
   slipRule: { height: 1, backgroundColor: C.border, marginVertical: 10 },
@@ -170,9 +173,10 @@ const styles = StyleSheet.create({
   featureTitle: { color: C.ink, fontSize: 18, fontWeight: '800', fontFamily: SERIF, marginTop: 18 },
   featureText: { color: C.muted, fontSize: 12, lineHeight: 19, marginTop: 7, maxWidth: 240 },
   pencilNumber: { position: 'absolute', right: 12, bottom: 5, color: 'rgba(138,114,87,0.18)', fontSize: 38, fontFamily: SERIF, fontStyle: 'italic' },
-  story: { flexDirection: 'row', alignItems: 'stretch', gap: 0, marginBottom: 58, borderColor: C.border, borderWidth: 1, backgroundColor: C.paperLight },
+  story: { flexDirection: 'row', alignItems: 'center', gap: 0, marginBottom: 58, borderColor: C.border, borderWidth: 1, backgroundColor: C.paperLight, overflow: 'hidden' },
   storyMobile: { flexDirection: 'column' },
-  storyImage: { flex: 1, minHeight: 330 },
+  storyImage: { width: '44%', height: 270, alignSelf: 'stretch' },
+  storyImageMobile: { width: '100%', height: 220 },
   storyCopy: { flex: 1, justifyContent: 'center', alignItems: 'flex-start', padding: 30 },
   handNote: { color: C.greenDark, fontSize: 13, fontFamily: SERIF, fontStyle: 'italic', transform: [{ rotate: '-1deg' }] },
   storyTitle: { color: C.ink, fontSize: 31, lineHeight: 36, fontWeight: '800', fontFamily: SERIF, marginTop: 13 },
