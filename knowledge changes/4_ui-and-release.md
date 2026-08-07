@@ -10,3 +10,4 @@
 - Jest: 42 tests pass after making the pnpm/Expo transform rule handle versioned `.pnpm` sources; `forceExit` only prevents the existing Supabase/auth listener from keeping Jest alive.
 - Lint is blocked in this container by Node 20.19.4; the repo requires Node 22 and ESLint currently calls `Object.groupBy`.
 - Local Supabase lint was attempted, but the CLI could not finish pulling the Docker stack in the available run; run `supabase start && supabase db lint --local` on a machine with the images cached.
+- Linked remote project `jtemvftvslhsexsdwzjp` now has migrations 0001–0006 applied and `scan-bill` is active. `GEMINI_API_KEY` is intentionally not set because no key was available in the environment.
