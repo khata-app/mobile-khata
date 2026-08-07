@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ImageBackground, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ImageBackground, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FocusAwareStatusBar, Text } from '@/components/ui';
 import { CaretDownIcon, CheckIcon, ChevronLeftIcon } from '@/features/khata/icons';
@@ -41,12 +41,55 @@ export const ruledPaper: object = Platform.select({
   default: {},
 });
 
+type WorkspaceScreenContextValue = {
+  section: string;
+  refreshing: boolean;
+  refresh: () => Promise<void>;
+  scrollOffset: number;
+  setScrollOffset: (offset: number) => void;
+};
+
+type KhataRefreshContextValue = {
+  refreshing: boolean;
+  refresh: () => Promise<void>;
+};
+
+const KhataRefreshContext = React.createContext<KhataRefreshContextValue | null>(null);
+const WorkspaceScreenContext = React.createContext<WorkspaceScreenContextValue | null>(null);
+
+export function KhataRefreshProvider({ children, refreshing, refresh }: { children: React.ReactNode; refreshing: boolean; refresh: () => Promise<void> }) {
+  return <KhataRefreshContext.Provider value={{ refreshing, refresh }}>{children}</KhataRefreshContext.Provider>;
+}
+
+export function WorkspaceScreenProvider({ children, section, refreshing, refresh, scrollOffset, onScrollOffsetChange }: { children: React.ReactNode; section: string; refreshing: boolean; refresh: () => Promise<void>; scrollOffset: number; onScrollOffsetChange: (offset: number) => void }) {
+  const value = React.useMemo<WorkspaceScreenContextValue>(() => ({
+    section,
+    refreshing,
+    refresh,
+    scrollOffset,
+    setScrollOffset: onScrollOffsetChange,
+  }), [onScrollOffsetChange, refresh, refreshing, scrollOffset, section]);
+  return <WorkspaceScreenContext.Provider value={value}>{children}</WorkspaceScreenContext.Provider>;
+}
+
 export function Screen({ children, scroll = true }: { children: React.ReactNode; scroll?: boolean }) {
+  const workspace = React.useContext(WorkspaceScreenContext);
+  const globalSync = React.useContext(KhataRefreshContext);
+  const scrollRef = React.useRef<ScrollView>(null);
+  React.useEffect(() => {
+    if (!workspace || !scroll)
+      return;
+    const frame = requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: workspace.scrollOffset, animated: false }));
+    return () => cancelAnimationFrame(frame);
+  }, [scroll, workspace]);
   const content = <View style={[styles.container, ruledPaper]}>{children}</View>;
+  const sync = workspace || globalSync;
   return (
     <SafeAreaView style={styles.safe}>
       <FocusAwareStatusBar />
-      <ImageBackground source={require('../../../assets/landing/notebook-desk.jpg')} resizeMode="cover" imageStyle={styles.backgroundImage} style={styles.background}>{scroll ? <ScrollView contentContainerStyle={styles.scroll}>{content}</ScrollView> : content}</ImageBackground>
+      <ImageBackground source={require('../../../assets/landing/notebook-desk.jpg')} resizeMode="cover" imageStyle={styles.backgroundImage} style={styles.background}>
+        {scroll ? <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} refreshControl={sync ? <RefreshControl refreshing={sync.refreshing} onRefresh={() => { void sync.refresh(); }} tintColor={C.brick} colors={[C.brick]} /> : undefined} onScroll={workspace ? event => workspace.setScrollOffset(event.nativeEvent.contentOffset.y) : undefined} scrollEventThrottle={16}>{content}</ScrollView> : content}
+      </ImageBackground>
     </SafeAreaView>
   );
 }
