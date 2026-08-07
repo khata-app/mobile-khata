@@ -1,5 +1,7 @@
 # Khata
 
+[Download the standalone Android APK](./khata.apk)
+
 Khata is an Expo application for mobile and web bookkeeping. The application lives in `apps/`, shared TypeScript contracts live in `packages/contracts/`, and database migrations live in `supabase/migrations/`.
 
 ## Branches and app URLs
@@ -58,8 +60,6 @@ pnpm --dir apps android:preview
 ```
 
 The generated debug APK is written under `apps/android/app/build/outputs/apk/` and is ignored by git.
-
-[Download the latest debug APK](./app-debug.apk)
 
 ## Quality checks
 
