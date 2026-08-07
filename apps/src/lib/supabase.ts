@@ -1,11 +1,13 @@
-import 'react-native-url-polyfill/auto';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
+import 'react-native-url-polyfill/auto';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const publishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-const isServer = typeof window === 'undefined';
+const isServer = Platform.OS === 'web' && typeof window === 'undefined';
 
 export const isSupabaseConfigured = Boolean(url && publishableKey) && !isServer;
 

@@ -1,22 +1,23 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, Modal, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
 import { FocusAwareStatusBar, SafeAreaView, Text } from '@/components/ui';
-import { useKhataStore } from '@/features/khata/store';
 import { useAuthStore as useAuth } from '@/features/auth/use-auth-store';
-import { C, SERIF } from '@/features/khata/ui';
-import { KhataLogo } from '@/features/khata/brand';
-import { ArrowUpRightIcon, BarChartIcon, BoxIcon, BuildingIcon, CartIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CoinsIcon, FileTextIcon, GearIcon, GridIcon, HomeIcon, LogOutIcon, PlusIcon, ReceiptIcon, UsersIcon } from '@/features/khata/icons';
 import DashboardScreen from '@/features/dashboard/dashboard-screen';
+import { KhataLogo } from '@/features/khata/brand';
+import { BarChartIcon, BoxIcon, BuildingIcon, BuyIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CoinsIcon, FileTextIcon, GearIcon, GridIcon, HomeIcon, LogOutIcon, ReceiptIcon, SellIcon, UsersIcon } from '@/features/khata/icons';
+import { useKhataStore } from '@/features/khata/store';
+import { C, SERIF } from '@/features/khata/ui';
 import ReportsScreen from '@/features/reports/reports-screen';
 import SettingsScreen from '@/features/settings/settings-screen';
-import { BillsPanel, EmployeesPanel, ExpensesPanel, InventoryPanel, PurchasePanel, SalesInvoicePanel, SalesPanel } from './workspace-panels';
+import { InventoryPanel } from './inventory-panel';
+import { BillsPanel, EmployeesPanel, ExpensesPanel, PurchasePanel, SalesInvoicePanel, SalesPanel } from './workspace-panels';
 
 type Section = 'dashboard' | 'purchase-scan' | 'sales-scan' | 'bills' | 'inventory' | 'sales' | 'expenses' | 'employees' | 'reports' | 'settings';
 
 const nav: Array<{ id: Section; label: string; icon: typeof GridIcon }> = [
   { id: 'dashboard', label: 'Overview', icon: GridIcon },
-  { id: 'purchase-scan', label: 'Purchases', icon: CartIcon },
+  { id: 'purchase-scan', label: 'Purchases', icon: BuyIcon },
   { id: 'sales-scan', label: 'Sales invoices', icon: FileTextIcon },
   { id: 'bills', label: 'Bills', icon: ReceiptIcon },
   { id: 'inventory', label: 'Inventory', icon: BoxIcon },
@@ -29,8 +30,8 @@ const nav: Array<{ id: Section; label: string; icon: typeof GridIcon }> = [
 
 const mobileNav: Array<{ id: Section; label: string; icon: typeof GridIcon }> = [
   { id: 'dashboard', label: 'Home', icon: HomeIcon },
-  { id: 'purchase-scan', label: 'Buy', icon: PlusIcon },
-  { id: 'sales-scan', label: 'Sell', icon: ArrowUpRightIcon },
+  { id: 'purchase-scan', label: 'Buy', icon: BuyIcon },
+  { id: 'sales-scan', label: 'Sell', icon: SellIcon },
   { id: 'inventory', label: 'Stock', icon: BoxIcon },
 ];
 
@@ -54,10 +55,16 @@ export function WorkspaceScreen({ initialSection = 'dashboard' }: { initialSecti
   const employees = useKhataStore.use.employees();
   const benefits = useKhataStore.use.benefits();
 
-  useEffect(() => { if (!hydrated) void hydrate(); }, [hydrate, hydrated]);
+  useEffect(() => {
+    if (!hydrated)
+      void hydrate();
+  }, [hydrate, hydrated]);
   useEffect(() => { setSection(requestedSection); }, [requestedSection]);
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', state => { if (state === 'active' && hydrated) void refresh(); });
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && hydrated)
+        void refresh();
+    });
     return () => subscription.remove();
   }, [hydrated, refresh]);
 
@@ -66,57 +73,177 @@ export function WorkspaceScreen({ initialSection = 'dashboard' }: { initialSecti
   };
 
   const syncLabel = syncing ? 'Syncing changes…' : syncError ? 'Offline · will retry' : businessId ? 'Synced securely' : 'Local demo data';
-  const content = section === 'dashboard' ? <DashboardScreen bills={bills} inventory={inventory} sales={sales} expenses={expenses} employees={employees} benefits={benefits} syncLabel={syncLabel} onNavigate={navigate} />
-    : section === 'purchase-scan' ? <PurchasePanel onNavigate={navigate} />
-      : section === 'sales-scan' ? <SalesInvoicePanel onNavigate={navigate} />
-        : section === 'bills' ? <BillsPanel onNavigate={navigate} />
-          : section === 'inventory' ? <InventoryPanel />
-            : section === 'sales' ? <SalesPanel onNavigate={navigate} />
-              : section === 'expenses' ? <ExpensesPanel />
-                : section === 'employees' ? <EmployeesPanel />
-                  : section === 'reports' ? <ReportsScreen onNavigate={navigate} />
+  const content = section === 'dashboard'
+    ? <DashboardScreen bills={bills} inventory={inventory} sales={sales} expenses={expenses} employees={employees} benefits={benefits} syncLabel={syncLabel} onNavigate={navigate} />
+    : section === 'purchase-scan'
+      ? <PurchasePanel onNavigate={navigate} />
+      : section === 'sales-scan'
+        ? <SalesInvoicePanel onNavigate={navigate} />
+        : section === 'bills'
+          ? <BillsPanel onNavigate={navigate} />
+          : section === 'inventory'
+            ? <InventoryPanel />
+            : section === 'sales'
+              ? <SalesPanel onNavigate={navigate} />
+              : section === 'expenses'
+                ? <ExpensesPanel />
+                : section === 'employees'
+                  ? <EmployeesPanel />
+                  : section === 'reports'
+                    ? <ReportsScreen onNavigate={navigate} />
                     : <SettingsScreen onNavigate={navigate} />;
 
-  return <SafeAreaView style={styles.safe}><FocusAwareStatusBar /><View style={styles.appFrame}>{desktop ? <View style={styles.desktopRow}><Sidebar active={section} onNavigate={navigate} company={company.name} /><View style={styles.desktopContent}>{syncing && <SyncBanner text="Saving this workspace securely…" tone="pending" />}{syncError && <SyncBanner text={syncError} tone="error" />}{content}</View></View> : <><MobileHeader active={section} onNavigate={navigate} company={company.name} /><View style={styles.mobileContent}>{syncing && <SyncBanner text="Syncing securely…" tone="pending" />}{syncError && <SyncBanner text={syncError} tone="error" />}{content}</View><MobileNavigation active={section} onNavigate={navigate} /></>}</View></SafeAreaView>;
+  return (
+    <SafeAreaView style={styles.safe}>
+      <FocusAwareStatusBar />
+      <View style={styles.appFrame}>
+        {desktop
+          ? (
+              <View style={styles.desktopRow}>
+                <Sidebar active={section} onNavigate={navigate} company={company.name} />
+                <View style={styles.desktopContent}>
+                  {syncing && <SyncBanner text="Saving this workspace securely…" tone="pending" />}
+                  {syncError && <SyncBanner text={syncError} tone="error" />}
+                  {content}
+                </View>
+              </View>
+            )
+          : (
+              <>
+                <MobileHeader active={section} onNavigate={navigate} company={company.name} />
+                <View style={styles.mobileContent}>
+                  {syncing && <SyncBanner text="Syncing securely…" tone="pending" />}
+                  {syncError && <SyncBanner text={syncError} tone="error" />}
+                  {content}
+                </View>
+                <MobileNavigation active={section} onNavigate={navigate} />
+              </>
+            )}
+      </View>
+    </SafeAreaView>
+  );
 }
 
 function SyncBanner({ text, tone }: { text: string; tone: 'pending' | 'error' }) { return <View style={[styles.syncBanner, tone === 'error' && styles.syncBannerError]}><Text style={styles.syncText}>{text}</Text></View>; }
 
 function Brand({ compact = false, onPress }: { compact?: boolean; onPress?: () => void }) {
-  const content = <><KhataLogo size={compact ? 34 : 42} />{!compact && <View><Text style={styles.brandName}>Khata</Text><Text style={styles.brandSub}>Business, in balance.</Text></View>}</>;
+  const content = (
+    <>
+      <KhataLogo size={compact ? 34 : 42} />
+      {!compact && (
+        <View>
+          <Text style={styles.brandName}>Khata</Text>
+          <Text style={styles.brandSub}>Business, in balance.</Text>
+        </View>
+      )}
+    </>
+  );
   return onPress ? <Pressable accessibilityRole="button" accessibilityLabel="Go to Khata landing page" onPress={onPress} style={styles.brand}>{content}</Pressable> : <View style={styles.brand}>{content}</View>;
 }
 
 function Sidebar({ active, onNavigate, company }: { active: Section; onNavigate: (section: string) => void; company: string }) {
-  return <View style={styles.sidebar}><Brand onPress={() => router.replace('/')} /><Pressable onPress={() => router.push('/company')} style={({ pressed }) => [styles.companyChip, pressed && { opacity: 0.85 }]}><View style={{ flex: 1 }}><Text style={styles.companyName}>{company}</Text><Text style={styles.companyMeta}>NPR · Kathmandu</Text></View><ChevronRightIcon size={15} color="rgba(255,255,255,0.7)" /></Pressable><View style={styles.nav}>{nav.map(item => <NavButton key={item.id} item={item} active={active === item.id} onPress={() => onNavigate(item.id)} />)}</View><View style={styles.sidebarFooter}><Text style={styles.footerText}>A clear book makes room for a better business.</Text><Pressable onPress={signOut} style={styles.footerLink}><LogOutIcon size={15} color="#E4C077" /><Text style={styles.footerLinkText}>Sign out</Text></Pressable></View></View>;
+  return (
+    <View style={styles.sidebar}>
+      <Brand onPress={() => router.replace('/')} />
+      <Pressable onPress={() => router.push('/company')} style={({ pressed }) => [styles.companyChip, pressed && { opacity: 0.85 }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.companyName}>{company}</Text>
+          <Text style={styles.companyMeta}>NPR · Kathmandu</Text>
+        </View>
+        <ChevronRightIcon size={15} color="rgba(255,255,255,0.7)" />
+      </Pressable>
+      <View style={styles.nav}>{nav.map(item => <NavButton key={item.id} item={item} active={active === item.id} onPress={() => onNavigate(item.id)} />)}</View>
+      <View style={styles.sidebarFooter}>
+        <Text style={styles.footerText}>A clear book makes room for a better business.</Text>
+        <Pressable onPress={signOut} style={styles.footerLink}>
+          <LogOutIcon size={15} color="#E4C077" />
+          <Text style={styles.footerLinkText}>Sign out</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
 }
 
 function NavButton({ item, active, onPress }: { item: (typeof nav)[number]; active: boolean; onPress: () => void }) {
   const Icon = item.icon;
-  return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.navButton, active && styles.navButtonActive, pressed && { opacity: 0.78 }]}><View style={[styles.navIcon, active && styles.navIconActive]}><Icon size={16} color={active ? C.white : 'rgba(255,255,255,0.72)'} /></View><Text style={[styles.navLabel, active && styles.navLabelActive]}>{item.label}</Text></Pressable>;
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.navButton, active && styles.navButtonActive, pressed && { opacity: 0.78 }]}>
+      <View style={[styles.navIcon, active && styles.navIconActive]}><Icon size={16} color={active ? C.white : 'rgba(255,255,255,0.72)'} /></View>
+      <Text style={[styles.navLabel, active && styles.navLabelActive]}>{item.label}</Text>
+    </Pressable>
+  );
 }
 
 function MobileHeader({ active, onNavigate, company }: { active: Section; onNavigate: (section: string) => void; company: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const sectionLabel = nav.find(item => item.id === active)?.label || 'Overview';
-  return <View style={styles.mobileHeader}>{active !== 'dashboard' && <Pressable accessibilityLabel="Back to overview" onPress={() => onNavigate('dashboard')} style={styles.backButton}><ChevronLeftIcon size={20} color={C.ink} /></Pressable>}<Brand compact onPress={() => Platform.OS === 'web' ? router.replace('/') : onNavigate('dashboard')} /><View style={styles.mobileHeaderCopy}><Text style={styles.mobileCompany} numberOfLines={1}>{company}</Text><Text style={styles.mobileSection}>{sectionLabel}</Text></View><Pressable accessibilityLabel="Open workspace menu" onPress={() => setMenuOpen(true)} style={styles.switchButton}><GridIcon size={19} color={C.brick} /></Pressable><CompanyMenu visible={menuOpen} onClose={() => setMenuOpen(false)} company={company} onNavigate={onNavigate} /></View>;
+  return (
+    <View style={styles.mobileHeader}>
+      {active !== 'dashboard' && <Pressable accessibilityLabel="Back to overview" onPress={() => onNavigate('dashboard')} style={styles.backButton}><ChevronLeftIcon size={20} color={C.ink} /></Pressable>}
+      <Brand compact onPress={() => Platform.OS === 'web' ? router.replace('/') : onNavigate('dashboard')} />
+      <View style={styles.mobileHeaderCopy}>
+        <Text style={styles.mobileCompany} numberOfLines={1}>{company}</Text>
+        <Text style={styles.mobileSection}>{sectionLabel}</Text>
+      </View>
+      <Pressable accessibilityLabel="Open workspace menu" onPress={() => setMenuOpen(true)} style={styles.switchButton}><GridIcon size={19} color={C.brick} /></Pressable>
+      <CompanyMenu visible={menuOpen} onClose={() => setMenuOpen(false)} company={company} onNavigate={onNavigate} />
+    </View>
+  );
 }
 
 function CompanyMenu({ visible, onClose, company, onNavigate }: { visible: boolean; onClose: () => void; company: string; onNavigate: (section: string) => void }) {
   const items: Array<{ icon: typeof BuildingIcon; label: string; detail: string; onPress: () => void }> = [
     { icon: BuildingIcon, label: 'Company profile', detail: 'Business details and defaults', onPress: () => { onClose(); router.push('/company'); } },
     { icon: FileTextIcon, label: 'Reports', detail: 'Day book, profit and stock', onPress: () => { onClose(); onNavigate('reports'); } },
-    { icon: GearIcon, label: 'Settings', detail: 'Sync, theme and preferences', onPress: () => { onClose(); onNavigate('settings'); } },
+    { icon: GearIcon, label: 'Settings', detail: 'Business details and sync', onPress: () => { onClose(); onNavigate('settings'); } },
     { icon: LogOutIcon, label: 'Sign out', detail: 'End this session on this device', onPress: async () => { onClose(); await signOut(); } },
   ];
-  return <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}><Pressable style={styles.overlay} onPress={onClose}><View style={styles.menuCard}><View style={styles.menuHead}><KhataLogo size={34} /><View style={{ flex: 1 }}><Text style={styles.menuTitle} numberOfLines={1}>{company}</Text><Text style={styles.menuDetail}>Current workspace · NPR</Text></View><CheckIcon size={16} color={C.green} /></View>{items.map(item => { const Icon = item.icon; return <Pressable key={item.label} onPress={item.onPress} style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.75 }]}><View style={styles.menuIconBox}><Icon size={17} color={C.brick} /></View><View style={{ flex: 1 }}><Text style={styles.menuItemText}>{item.label}</Text><Text style={styles.menuItemDetail}>{item.detail}</Text></View><ChevronRightIcon size={16} color={C.muted} /></Pressable>; })}</View></Pressable></Modal>;
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <View style={styles.menuCard}>
+          <View style={styles.menuHead}>
+            <KhataLogo size={34} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.menuTitle} numberOfLines={1}>{company}</Text>
+              <Text style={styles.menuDetail}>Current workspace · NPR</Text>
+            </View>
+            <CheckIcon size={16} color={C.green} />
+          </View>
+          {items.map((item) => {
+            const Icon = item.icon; return (
+              <Pressable key={item.label} onPress={item.onPress} style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.75 }]}>
+                <View style={styles.menuIconBox}><Icon size={17} color={C.brick} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.menuItemText}>{item.label}</Text>
+                  <Text style={styles.menuItemDetail}>{item.detail}</Text>
+                </View>
+                <ChevronRightIcon size={16} color={C.muted} />
+              </Pressable>
+            );
+          })}
+        </View>
+      </Pressable>
+    </Modal>
+  );
 }
 
 function MobileNavigation({ active, onNavigate }: { active: Section; onNavigate: (section: string) => void }) {
-  return <View style={styles.mobileNav}>{mobileNav.map(item => { const Icon = item.icon; return <Pressable accessibilityRole="button" key={item.id} onPress={() => onNavigate(item.id)} style={({ pressed }) => [styles.mobileNavItem, pressed && { opacity: 0.7 }]}><View style={[styles.mobileNavIcon, active === item.id && styles.mobileNavIconActive]}><Icon size={19} color={active === item.id ? C.brick : C.muted} /></View><Text style={[styles.mobileNavLabel, active === item.id && styles.mobileNavLabelActive]}>{item.label}</Text></Pressable>; })}</View>;
+  return (
+    <View style={styles.mobileNav}>
+      {mobileNav.map((item) => {
+        const Icon = item.icon; return (
+          <Pressable accessibilityRole="button" key={item.id} onPress={() => onNavigate(item.id)} style={({ pressed }) => [styles.mobileNavItem, pressed && { opacity: 0.7 }]}>
+            <View style={[styles.mobileNavIcon, active === item.id && styles.mobileNavIconActive]}><Icon size={19} color={active === item.id ? C.brick : C.muted} /></View>
+            <Text style={[styles.mobileNavLabel, active === item.id && styles.mobileNavLabelActive]}>{item.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
 }
 
-const signOut = async () => { await useAuth.getState().signOut(); router.replace('/login'); };
+async function signOut() { await useAuth.getState().signOut(); router.replace('/login'); }
 
 export default WorkspaceScreen;
 
