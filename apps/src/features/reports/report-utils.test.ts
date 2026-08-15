@@ -33,4 +33,11 @@ describe('buildReports', () => {
     expect(csv).toContain('"Line","Amount"');
     expect(csv).toContain('"Net profit"');
   });
+
+  it('builds open-balance ageing and a VAT register from payment states', () => {
+    const result = buildReports({ ...input, sales: [{ ...input.sales[0], payment: 'Credit', paymentStatus: 'partially_paid', paidAmount: 500 }] });
+    expect(result.receivablesAgeing[0].outstanding).toBe(1760);
+    expect(result.payablesAgeing[0].outstanding).toBe(1130);
+    expect(reportRows(result, 'vat-register')).toHaveLength(2);
+  });
 });
