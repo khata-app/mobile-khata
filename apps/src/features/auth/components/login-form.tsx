@@ -13,6 +13,7 @@ const getErrorMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   if (/invalid login credentials/i.test(message)) return 'Incorrect email or password. Please try again.';
   if (/already registered/i.test(message)) return 'An account already exists for this email. Please sign in instead.';
+  if (/confirm|check your email/i.test(message)) return message;
   if (/rate limit/i.test(message)) return 'Too many attempts. Please wait a moment and try again.';
   if (/network|fetch|failed/i.test(message)) return 'Could not reach the server. Check your connection and try again.';
   return message;

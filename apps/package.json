@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.12.3",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/user/repo-name.git"
+    "url": "git+https://github.com/khata-app/mobile-khata.git"
   },
   "main": "expo-router/entry",
   "scripts": {

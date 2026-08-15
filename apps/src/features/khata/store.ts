@@ -10,7 +10,6 @@ import {
   loadWorkspace,
   removeEmployee as removeRemoteEmployee,
   removeInventory as removeRemoteInventory,
-  seedDemoWorkspace,
   updateWorkspace,
   upsertEmployee,
   upsertInventory,
@@ -204,18 +203,15 @@ const _useKhataStore = create<KhataState>((set, get) => ({
         fiscalYear: setup.fiscalYear,
         vatRate: Number(setup.vatRate) || 13,
       };
-      set({ company: nextCompany, businessId: nextBusinessId, syncError: null });
-      if (!isRemoteBusiness(currentBusinessId)) {
-        const seeded = await seedDemoWorkspace(nextBusinessId, {
-          bills: get().bills,
-          inventory: get().inventory,
-          sales: get().sales,
-          expenses: get().expenses,
-          employees: get().employees,
-          benefits: get().benefits,
-        });
-        set({ ...seeded, company: nextCompany });
-      }
+      const isNewWorkspace = !isRemoteBusiness(currentBusinessId);
+      set({
+        company: nextCompany,
+        businessId: nextBusinessId,
+        syncError: null,
+        ...(isNewWorkspace
+          ? { bills: [], inventory: [], sales: [], expenses: [], employees: [], benefits: [] }
+          : {}),
+      });
       persist(get());
       return true;
     } catch (error) {

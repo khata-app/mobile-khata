@@ -22,6 +22,8 @@ export function LoginScreen() {
     const { error } = result;
     if (error)
       throw error;
+    if (mode === 'register' && !result.data.session)
+      throw new Error('Your account was created. Check your email to confirm it, then sign in.');
     const workspace = await loadWorkspace();
     router.replace(workspace ? '/dashboard' : '/company');
   };
