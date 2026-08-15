@@ -120,6 +120,8 @@ export function LoginForm({ onSubmit = async () => {}, mode = 'login', onModeCha
                 leftIcon={<LockIcon size={18} color={C.muted} />}
                 rightIcon={(
                   <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                     testID="toggle-password"
                     onPress={() => setShowPassword(current => !current)}
                     hitSlop={8}
@@ -145,6 +147,8 @@ export function LoginForm({ onSubmit = async () => {}, mode = 'login', onModeCha
             )} />
 
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={register ? 'Switch to sign in' : 'Switch to account registration'}
               onPress={() => onModeChange?.(register ? 'login' : 'register')}
               style={({ pressed }) => [styles.switchLink, pressed && { opacity: 0.7 }]}
             >

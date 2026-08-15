@@ -88,7 +88,7 @@ export function Screen({ children, scroll = true }: { children: React.ReactNode;
     <SafeAreaView style={styles.safe}>
       <FocusAwareStatusBar />
       <ImageBackground source={require('../../../assets/landing/notebook-desk.jpg')} resizeMode="cover" imageStyle={styles.backgroundImage} style={styles.background}>
-        {scroll ? <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} refreshControl={sync ? <RefreshControl refreshing={sync.refreshing} onRefresh={() => { void sync.refresh(); }} tintColor={C.brick} colors={[C.brick]} /> : undefined} onScroll={workspace ? event => workspace.setScrollOffset(event.nativeEvent.contentOffset.y) : undefined} scrollEventThrottle={16}>{content}</ScrollView> : content}
+        {scroll ? <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" refreshControl={sync ? <RefreshControl refreshing={sync.refreshing} onRefresh={() => { void sync.refresh(); }} tintColor={C.brick} colors={[C.brick]} /> : undefined} onScroll={workspace ? event => workspace.setScrollOffset(event.nativeEvent.contentOffset.y) : undefined} scrollEventThrottle={16}>{content}</ScrollView> : content}
       </ImageBackground>
     </SafeAreaView>
   );
@@ -117,7 +117,7 @@ export function SectionHeader({ title, detail, action }: { title: string; detail
 }
 export function Button({ label, onPress, variant = 'primary', disabled = false, icon }: { label: string; onPress?: () => void; variant?: 'primary' | 'outline' | 'danger' | 'ghost'; disabled?: boolean; icon?: React.ReactNode }) {
   return (
-    <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, variant === 'primary' && styles.primary, variant === 'outline' && styles.outline, variant === 'danger' && styles.danger, variant === 'ghost' && styles.ghost, pressed && styles.pressed, disabled && styles.disabled]}>
+    <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, variant === 'primary' && styles.primary, variant === 'outline' && styles.outline, variant === 'danger' && styles.danger, variant === 'ghost' && styles.ghost, pressed && styles.pressed, disabled && styles.disabled]}>
       <View style={styles.buttonInner}>
         {icon}
         <Text style={[styles.buttonText, variant === 'primary' && styles.primaryText, variant === 'outline' && styles.outlineText, variant === 'danger' && styles.dangerText, variant === 'ghost' && styles.ghostText]}>{label}</Text>
@@ -139,7 +139,7 @@ export function Select({ label, value, options, onChange, placeholder = 'Selectâ
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <Pressable onPress={() => setOpen(true)} style={({ pressed }) => [styles.input, styles.select, pressed && { opacity: 0.75 }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint="Opens a list of options" accessibilityState={{ expanded: open }} onPress={() => setOpen(true)} style={({ pressed }) => [styles.input, styles.select, pressed && { opacity: 0.75 }]}>
         <Text style={[styles.selectValue, !selected && styles.selectPlaceholder]}>{selected ? selected.label : placeholder}</Text>
         <CaretDownIcon size={16} color={C.muted} />
       </Pressable>
@@ -165,7 +165,7 @@ export function Field({ label, value, onChangeText, placeholder, keyboardType = 
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={C.muted} keyboardType={keyboardType} multiline={multiline} style={[styles.input, multiline && styles.multiline]} />
+      <TextInput accessibilityLabel={label} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={C.muted} keyboardType={keyboardType} multiline={multiline} style={[styles.input, multiline && styles.multiline]} />
     </View>
   );
 }
