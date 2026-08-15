@@ -10,14 +10,16 @@ import {
   loadWorkspace,
   removeEmployee as removeRemoteEmployee,
   removeInventory as removeRemoteInventory,
+  removeParty as removeRemoteParty,
   applyStockMovement,
   updateBillPayment,
   updateSalePayment,
   updateWorkspace,
   upsertEmployee,
   upsertInventory,
+  upsertParty,
 } from '@/lib/supabase-repository';
-import type { Bill, Benefit, Company, CompanySetup, Employee, Expense, InventoryItem, PaymentStatus, Sale } from './types';
+import type { Bill, Benefit, Company, CompanySetup, Employee, Expense, InventoryItem, Party, PaymentStatus, Sale } from './types';
 
 const DEMO_BUSINESS_ID = 'demo-company';
 const today = new Date().toISOString().slice(0, 10);
@@ -63,6 +65,12 @@ const initialBenefits: Benefit[] = [
   { id: 'benefit-1', employeeId: 'employee-1', type: 'Dashain allowance', amount: 10000, date: '2026-07-20', payment: 'Bank transfer' },
 ];
 
+const initialParties: Party[] = [
+  { id: 'supplier-shree', name: 'Shree Suppliers', type: 'supplier' },
+  { id: 'supplier-bhatbhateni', name: 'Bhatbhateni Supermarket', type: 'supplier' },
+  { id: 'customer-himalayan', name: 'Himalayan Cafe', type: 'customer' },
+];
+
 type Snapshot = {
   company: Company;
   bills: Bill[];
@@ -71,6 +79,7 @@ type Snapshot = {
   expenses: Expense[];
   employees: Employee[];
   benefits: Benefit[];
+  parties: Party[];
 };
 
 type KhataState = Snapshot & {
@@ -91,6 +100,8 @@ type KhataState = Snapshot & {
   saveEmployee: (employee: Omit<Employee, 'id'> & { id?: string }) => void;
   removeEmployee: (id: string) => void;
   saveBenefit: (benefit: Omit<Benefit, 'id'> & { id?: string }) => void;
+  saveParty: (party: Omit<Party, 'id'> & { id?: string }) => void;
+  removeParty: (partyId: string) => void;
   markSalePaid: (saleId: string, details?: { paymentStatus?: PaymentStatus; paidAmount?: number; paymentReceivedDate?: string; paymentReceivedMethod?: string; payerPhone?: string }) => void;
   markBillPaid: (billId: string, details?: { paymentStatus?: PaymentStatus; paidAmount?: number }) => void;
 };
@@ -104,6 +115,7 @@ function persist(state: KhataState) {
     expenses: state.expenses,
     employees: state.employees,
     benefits: state.benefits,
+    parties: state.parties,
   };
   storage.set('khata.workspace.v2', JSON.stringify(snapshot));
 }
@@ -114,6 +126,14 @@ function id(prefix: string) {
 
 function isRemoteBusiness(businessId: string | null): businessId is string {
   return Boolean(businessId && businessId !== DEMO_BUSINESS_ID);
+}
+
+function inferParties(snapshot: Pick<Snapshot, 'bills' | 'sales' | 'inventory'>): Party[] {
+  const result = new Map<string, Party>();
+  snapshot.bills.forEach(bill => result.set(`supplier:${bill.vendor}`, { id: `supplier-${bill.vendor}`, name: bill.vendor, type: 'supplier', phone: bill.vendorPhone }));
+  snapshot.inventory.forEach(item => result.set(`supplier:${item.supplier}`, { id: `supplier-${item.supplier}`, name: item.supplier, type: 'supplier', phone: item.supplierPhone }));
+  snapshot.sales.forEach(sale => result.set(`customer:${sale.customer}`, { id: `customer-${sale.customer}`, name: sale.customer, type: 'customer', phone: sale.customerPhone }));
+  return Array.from(result.values()).filter(party => party.name.trim());
 }
 
 function snapshotFromRaw(raw: string | undefined): Snapshot | null {
@@ -129,6 +149,7 @@ function snapshotFromRaw(raw: string | undefined): Snapshot | null {
       expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
       employees: Array.isArray(parsed.employees) ? parsed.employees : [],
       benefits: Array.isArray(parsed.benefits) ? parsed.benefits : [],
+      parties: Array.isArray(parsed.parties) ? parsed.parties : inferParties({ bills: parsed.bills, sales: Array.isArray(parsed.sales) ? parsed.sales : [], inventory: parsed.inventory }),
     };
   } catch {
     return null;
@@ -157,6 +178,7 @@ const _useKhataStore = create<KhataState>((set, get) => ({
   expenses: initialExpenses,
   employees: initialEmployees,
   benefits: initialBenefits,
+  parties: initialParties,
   businessId: null,
   hydrated: false,
   syncing: false,
@@ -215,7 +237,7 @@ const _useKhataStore = create<KhataState>((set, get) => ({
         businessId: nextBusinessId,
         syncError: null,
         ...(isNewWorkspace
-          ? { bills: [], inventory: [], sales: [], expenses: [], employees: [], benefits: [] }
+          ? { bills: [], inventory: [], sales: [], expenses: [], employees: [], benefits: [], parties: [] }
           : {}),
       });
       persist(get());
@@ -324,6 +346,25 @@ const _useKhataStore = create<KhataState>((set, get) => ({
       set(state => ({ benefits: state.benefits.map(existing => existing.id === localBenefit.id ? saved : existing) }));
       persist(get());
     });
+  },
+  saveParty: party => {
+    const localParty = { ...party, id: party.id || id(party.type) };
+    set(state => ({ parties: party.id ? state.parties.map(existing => existing.id === party.id ? localParty : existing) : [localParty, ...state.parties.filter(existing => !(existing.type === localParty.type && existing.name.toLowerCase() === localParty.name.toLowerCase()))] }));
+    persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId)) runSync(async () => {
+      const saved = await upsertParty(businessId, party);
+      set(state => ({ parties: state.parties.map(existing => existing.id === localParty.id ? saved : existing) }));
+      persist(get());
+    });
+  },
+  removeParty: partyId => {
+    const party = get().parties.find(candidate => candidate.id === partyId);
+    if (!party) return;
+    set(state => ({ parties: state.parties.filter(candidate => candidate.id !== partyId) }));
+    persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId) && partyId.length > 20) runSync(() => removeRemoteParty(businessId, party));
   },
   markSalePaid: (saleId, details = {}) => {
     const existing = get().sales.find(sale => sale.id === saleId);

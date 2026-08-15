@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Bill, BillLineItem, Employee, InventoryItem } from '@/features/khata/types';
+import type { Bill, BillLineItem, Employee, InventoryItem, Party } from '@/features/khata/types';
 import * as ImagePicker from 'expo-image-picker';
 import { useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -108,6 +108,36 @@ export function BillsPanel({ onNavigate }: { onNavigate: (section: string) => vo
       <SectionHeader title="Purchase register" detail="Supplier, invoice, date and amount" action={<Button label="New purchase" icon={<PlusIcon size={16} color={C.white} />} onPress={() => onNavigate('purchase-scan')} />} />
       {bills.map(bill => <Record key={bill.id} title={bill.vendor} detail={`${bill.invoice} · ${bill.date} · ${bill.payment} · ${bill.paymentStatus || (bill.payment === 'Credit' ? 'pending' : 'paid')}`} amount={money(bill.total)} tone={bill.status === 'saved' ? 'green' : 'gold'} />)}
       {bills.length === 0 && <Empty text="No purchase bills yet. Scan or enter your first one." />}
+    </Screen>
+  );
+}
+
+export function PartiesPanel() {
+  const parties = useKhataStore.use.parties();
+  const saveParty = useKhataStore.use.saveParty();
+  const removeParty = useKhataStore.use.removeParty();
+  const [form, setForm] = useState({ name: '', phone: '', type: 'customer' as Party['type'] });
+  const save = () => {
+    if (!form.name.trim()) return;
+    saveParty({ name: form.name.trim(), phone: form.phone.trim(), type: form.type });
+    setForm({ name: '', phone: '', type: form.type });
+  };
+  const remove = (party: Party) => Alert.alert('Delete this party?', `${party.name} will be removed from the master list. Existing transactions stay unchanged.`, [{ text: 'Keep', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => removeParty(party.id) }]);
+  return (
+    <Screen>
+      <Title subtitle="Keep customer and supplier details reusable across invoices, payments and reports.">Party master</Title>
+      <Card>
+        <SectionHeader title="Add party" detail="Names are kept separate for customers and suppliers" />
+        <View style={styles.fieldRow}>
+          <Field label="Name" value={form.name} onChangeText={value => setForm(current => ({ ...current, name: value }))} placeholder="Customer or supplier" />
+          <Field label="Phone" value={form.phone} onChangeText={value => setForm(current => ({ ...current, phone: value }))} keyboardType="phone-pad" placeholder="Optional" />
+          <Select label="Type" value={form.type} options={[{ label: 'Customer', value: 'customer' }, { label: 'Supplier', value: 'supplier' }]} onChange={value => setForm(current => ({ ...current, type: value as Party['type'] }))} />
+        </View>
+        <Button label="Save party" onPress={save} disabled={!form.name.trim()} />
+      </Card>
+      <SectionHeader title="Party register" detail={`${parties.length} saved contacts`} />
+      {parties.map(party => <Card key={party.id}><View style={styles.recordTop}><View style={styles.recordCopy}><Text style={styles.recordTitle}>{party.name}</Text><Text style={styles.recordDetail}>{party.type === 'customer' ? 'Customer' : 'Supplier'} · {party.phone || 'No phone'}</Text></View><IconButton label={`Delete ${party.name}`} danger icon={<TrashIcon size={17} color={C.red} />} onPress={() => remove(party)} /></View></Card>)}
+      {!parties.length && <Empty text="No parties yet. Add a customer or supplier to build the master list." />}
     </Screen>
   );
 }

@@ -1,12 +1,14 @@
 import { router } from 'expo-router';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useAuthStore as useAuth } from '@/features/auth/use-auth-store';
 import { BuildingIcon, CalendarIcon, ChevronRightIcon, LogOutIcon, RefreshIcon, UsersIcon } from '@/features/khata/icons';
 import { useKhataStore } from '@/features/khata/store';
 import { Button, C, Card, Chip, Field, Screen, SERIF, Text, Title } from '@/features/khata/ui';
 import { defaultTaxRates, type TaxRate } from '@/features/tax/domain';
-import { listTaxRates, upsertTaxRate } from '@/lib/supabase-repository';
+import { exportWorkspaceBackup, listAuditEvents, listTaxRates, listWorkspaceMembers, migrateLegacyRecordsToLedger, upsertTaxRate, type AuditEvent, type WorkspaceMember } from '@/lib/supabase-repository';
 
 export function SettingsScreen({ onNavigate }: { onNavigate?: (section: string) => void }) {
   const signOut = useAuth.use.signOut();
@@ -17,9 +19,16 @@ export function SettingsScreen({ onNavigate }: { onNavigate?: (section: string) 
   const [notice, setNotice] = useState('');
   const [taxRates, setTaxRates] = useState<TaxRate[]>(defaultTaxRates);
   const [taxNotice, setTaxNotice] = useState('');
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [adminNotice, setAdminNotice] = useState('');
   useEffect(() => {
     if (!businessId) return;
     void listTaxRates(businessId).then(rates => { if (rates.length) setTaxRates(rates); }).catch(() => setTaxNotice('Tax defaults are available locally; sync them when Supabase is ready.'));
+  }, [businessId]);
+  useEffect(() => {
+    if (!businessId) return;
+    void Promise.all([listWorkspaceMembers(businessId), listAuditEvents(businessId)]).then(([nextMembers, nextAudit]) => { setMembers(nextMembers); setAuditEvents(nextAudit); }).catch(() => setAdminNotice('Members and audit history will appear after the admin migration is applied.'));
   }, [businessId]);
   const runRefresh = async () => { setNotice('Checking Supabase for the latest workspace data…'); await refresh(); setNotice('Workspace is up to date.'); };
   const leave = async () => { await signOut(); router.replace('/login'); };
@@ -28,6 +37,31 @@ export function SettingsScreen({ onNavigate }: { onNavigate?: (section: string) 
     if (!businessId) { setTaxNotice('Tax defaults updated for this session.'); return; }
     try { setTaxNotice('Saving tax rates…'); await Promise.all(taxRates.map(rate => upsertTaxRate(businessId, rate))); setTaxNotice('Tax rates saved securely.'); }
     catch (error) { setTaxNotice(error instanceof Error ? error.message : 'Tax rates could not be saved.'); }
+  };
+  const exportBackup = async () => {
+    if (!businessId) { setAdminNotice('Create a connected workspace before exporting a backup.'); return; }
+    try {
+      setAdminNotice('Preparing a private workspace backup…');
+      const snapshot = await exportWorkspaceBackup(businessId);
+      const json = JSON.stringify(snapshot, null, 2);
+      if (Platform.OS === 'web') {
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${company.name.replaceAll(' ', '-').toLowerCase()}-backup.json`; anchor.click(); URL.revokeObjectURL(url);
+      }
+      else {
+        const uri = `${FileSystem.cacheDirectory}khata-backup-${Date.now()}.json`;
+        await FileSystem.writeAsStringAsync(uri, json, { encoding: FileSystem.EncodingType.UTF8 });
+        if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'application/json', dialogTitle: 'Export Khata backup' });
+      }
+      setAdminNotice('Backup exported. Keep it somewhere private and secure.');
+    }
+    catch (error) { setAdminNotice(error instanceof Error ? error.message : 'Backup could not be exported.'); }
+  };
+  const migrateLedger = async () => {
+    if (!businessId) { setAdminNotice('Create a connected workspace before migrating ledger records.'); return; }
+    try { setAdminNotice('Checking legacy records and posting missing ledger entries…'); const count = await migrateLegacyRecordsToLedger(businessId); setAdminNotice(`${count} legacy record${count === 1 ? '' : 's'} migrated. Existing ledger entries were left untouched.`); }
+    catch (error) { setAdminNotice(error instanceof Error ? error.message : 'Legacy records could not be migrated.'); }
   };
   const items = [
     { icon: BuildingIcon, title: 'Business profile', detail: 'PAN, city and company defaults', onPress: () => router.replace('/company') },
@@ -75,6 +109,15 @@ export function SettingsScreen({ onNavigate }: { onNavigate?: (section: string) 
         <Button label="Save tax rates" variant="outline" onPress={() => { void saveTaxRates(); }} />
         {taxNotice && <Text style={styles.notice}>{taxNotice}</Text>}
       </Card>
+      <Card>
+        <Text style={styles.itemTitle}>Users, roles and audit</Text>
+        <Text style={styles.itemDetail}>See who can access this workspace and the latest recorded admin events.</Text>
+        {members.length ? members.map(member => <View style={styles.adminRow} key={member.userId}><Text style={styles.adminName}>{member.name}</Text><Chip tone={member.role === 'owner' ? 'gold' : 'green'}>{member.role}</Chip></View>) : <Text style={styles.itemDetail}>No member list loaded yet.</Text>}
+        {auditEvents.length > 0 && <><Text style={styles.auditHeading}>Recent activity</Text>{auditEvents.slice(0, 5).map(event => <Text style={styles.auditLine} key={event.id}>{event.action} · {event.entityType || 'workspace'} · {new Date(event.createdAt).toLocaleDateString()}</Text>)}</>}
+        <Button label="Export backup" variant="outline" onPress={() => { void exportBackup(); }} />
+        <Button label="Migrate old records to ledger" variant="outline" onPress={() => { void migrateLedger(); }} />
+        {adminNotice && <Text style={styles.notice}>{adminNotice}</Text>}
+      </Card>
       <Card style={styles.syncCard}>
         <View style={styles.syncCopy}>
           <Text style={styles.itemTitle}>Sync and offline data</Text>
@@ -111,5 +154,9 @@ const styles = StyleSheet.create({
   taxRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6, borderBottomColor: C.border, borderBottomWidth: 1 },
   taxName: { color: C.ink, fontSize: 13, fontWeight: '800' },
   taxCode: { color: C.muted, fontSize: 10, marginTop: 3 },
+  adminRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingVertical: 8, borderBottomColor: C.border, borderBottomWidth: 1 },
+  adminName: { flex: 1, color: C.ink, fontSize: 13, fontWeight: '700' },
+  auditHeading: { color: C.ink, fontSize: 11, fontWeight: '900', textTransform: 'uppercase', marginTop: 8 },
+  auditLine: { color: C.muted, fontSize: 11, lineHeight: 17 },
   signOut: { backgroundColor: C.redLight, borderColor: '#DFB4A4' },
 });
