@@ -1,5 +1,5 @@
 import { isSupabaseConfigured, supabase } from './supabase';
-import type { Benefit, Bill, Company, CompanySetup, Employee, Expense, InventoryItem, Sale } from '@/features/khata/types';
+import type { Benefit, Bill, Company, CompanySetup, Employee, Expense, InventoryItem, PaymentStatus, Sale } from '@/features/khata/types';
 import { fromPaisa, toPaisa, validateVoucher, type Account, type PostVoucherInput, type PostedVoucher } from '@/features/accounting/domain';
 
 type ObjectValue = Record<string, unknown>;
@@ -36,6 +36,11 @@ function rupees(value: unknown) {
 function relatedName(row: ObjectValue, relation: string) {
   const related = objectValue(row[relation]);
   return stringValue(related.name);
+}
+
+function relatedPhone(row: ObjectValue, relation: string) {
+  const related = objectValue(row[relation]);
+  return stringValue(related.phone);
 }
 
 function errorMessage(error: { message?: string } | null) {
@@ -184,9 +189,9 @@ export async function loadWorkspace(): Promise<WorkspaceData | null> {
   };
 
   const [billsResult, inventoryResult, salesResult, expensesResult, employeesResult, benefitsResult] = await Promise.all([
-    supabase.from('purchase_bills').select('id, invoice_number, invoice_date, total_paisa, vat_paisa, payment_method, status, vendors(name)').eq('business_id', businessId).order('invoice_date', { ascending: false }),
-    supabase.from('inventory_items').select('id, name, category, unit, stock_quantity, daily_requirement, reorder_level, purchase_cost_paisa, selling_price_paisa, vendors(name)').eq('business_id', businessId).order('created_at', { ascending: false }),
-    supabase.from('sales').select('id, sale_date, total_paisa, cost_paisa, payment_method, item_count, customers(name)').eq('business_id', businessId).order('sale_date', { ascending: false }),
+    supabase.from('purchase_bills').select('id, invoice_number, invoice_date, total_paisa, vat_paisa, payment_method, status, payment_status, paid_paisa, vendors(name, phone)').eq('business_id', businessId).order('invoice_date', { ascending: false }),
+    supabase.from('inventory_items').select('id, name, category, unit, stock_quantity, daily_requirement, reorder_level, purchase_cost_paisa, selling_price_paisa, vendors(name, phone)').eq('business_id', businessId).order('created_at', { ascending: false }),
+    supabase.from('sales').select('id, sale_date, total_paisa, cost_paisa, payment_method, item_count, payment_status, paid_paisa, payment_received_date, payment_received_method, payer_phone, customers(name, phone)').eq('business_id', businessId).order('sale_date', { ascending: false }),
     supabase.from('expenses').select('id, category, description, expense_date, amount_paisa, payment_method').eq('business_id', businessId).order('expense_date', { ascending: false }),
     supabase.from('employees').select('id, name, department, phone, status, salary_paisa').eq('business_id', businessId).order('created_at', { ascending: false }),
     supabase.from('employee_benefits').select('id, employee_id, benefit_type, amount_paisa, benefit_date, payment_method').eq('business_id', businessId).order('benefit_date', { ascending: false }),
@@ -206,6 +211,9 @@ export async function loadWorkspace(): Promise<WorkspaceData | null> {
       vat: rupees(row.vat_paisa),
       payment: stringValue(row.payment_method, 'Cash'),
       status: stringValue(row.status, 'saved') === 'review' ? 'review' : 'saved',
+      paymentStatus: stringValue(row.payment_status, 'paid') as PaymentStatus,
+      paidAmount: rupees(row.paid_paisa),
+      vendorPhone: relatedPhone(row, 'vendors'),
     })),
     inventory: rows(inventoryResult.data).map(row => ({
       id: stringValue(row.id),
@@ -218,6 +226,7 @@ export async function loadWorkspace(): Promise<WorkspaceData | null> {
       purchaseCost: rupees(row.purchase_cost_paisa),
       sellingPrice: rupees(row.selling_price_paisa),
       supplier: relatedName(row, 'vendors'),
+      supplierPhone: relatedPhone(row, 'vendors'),
     })),
     sales: rows(salesResult.data).map(row => ({
       id: stringValue(row.id),
@@ -227,6 +236,12 @@ export async function loadWorkspace(): Promise<WorkspaceData | null> {
       cost: rupees(row.cost_paisa),
       payment: stringValue(row.payment_method, 'Cash'),
       itemCount: numberValue(row.item_count),
+      paymentStatus: stringValue(row.payment_status, 'paid') as PaymentStatus,
+      paidAmount: rupees(row.paid_paisa),
+      customerPhone: relatedPhone(row, 'customers'),
+      paymentReceivedDate: stringValue(row.payment_received_date),
+      paymentReceivedMethod: stringValue(row.payment_received_method),
+      payerPhone: stringValue(row.payer_phone),
     })),
     expenses: rows(expensesResult.data).map(row => ({
       id: stringValue(row.id),
@@ -255,16 +270,16 @@ export async function loadWorkspace(): Promise<WorkspaceData | null> {
   } satisfies WorkspaceData;
 }
 
-async function upsertName(table: 'vendors' | 'customers', businessId: string, name: string) {
+async function upsertName(table: 'vendors' | 'customers', businessId: string, name: string, phone?: string) {
   const cleanName = name.trim();
   if (!cleanName) return null;
-  const { data, error } = await supabase.from(table).upsert({ business_id: businessId, name: cleanName }, { onConflict: 'business_id,name' }).select('id').single();
+  const { data, error } = await supabase.from(table).upsert({ business_id: businessId, name: cleanName, ...(phone?.trim() ? { phone: phone.trim() } : {}) }, { onConflict: 'business_id,name' }).select('id').single();
   if (error) throw new Error(errorMessage(error));
   return requiredId(objectValue(data).id, `${table} was not saved`);
 }
 
 export async function insertBill(businessId: string, bill: Omit<Bill, 'id'>) {
-  const vendorId = await upsertName('vendors', businessId, bill.vendor);
+  const vendorId = await upsertName('vendors', businessId, bill.vendor, bill.vendorPhone);
   const { data, error } = await supabase.from('purchase_bills').insert({
     business_id: businessId,
     vendor_id: vendorId,
@@ -274,6 +289,8 @@ export async function insertBill(businessId: string, bill: Omit<Bill, 'id'>) {
     vat_paisa: paisa(bill.vat),
     payment_method: bill.payment,
     status: bill.status,
+    payment_status: bill.paymentStatus || 'paid',
+    paid_paisa: paisa(bill.paidAmount ?? (bill.paymentStatus === 'paid' ? bill.total : 0)),
     created_by: await currentUserId(),
   }).select('id').single();
   if (error) throw new Error(errorMessage(error));
@@ -281,7 +298,7 @@ export async function insertBill(businessId: string, bill: Omit<Bill, 'id'>) {
 }
 
 export async function insertSale(businessId: string, sale: Omit<Sale, 'id'>) {
-  const customerId = await upsertName('customers', businessId, sale.customer);
+  const customerId = await upsertName('customers', businessId, sale.customer, sale.customerPhone);
   const { data, error } = await supabase.from('sales').insert({
     business_id: businessId,
     customer_id: customerId,
@@ -290,6 +307,11 @@ export async function insertSale(businessId: string, sale: Omit<Sale, 'id'>) {
     cost_paisa: paisa(sale.cost),
     payment_method: sale.payment,
     item_count: sale.itemCount,
+    payment_status: sale.paymentStatus || 'paid',
+    paid_paisa: paisa(sale.paidAmount ?? (sale.paymentStatus === 'paid' ? sale.total : 0)),
+    payment_received_date: sale.paymentReceivedDate || null,
+    payment_received_method: sale.paymentReceivedMethod || null,
+    payer_phone: sale.payerPhone || null,
     created_by: await currentUserId(),
   }).select('id').single();
   if (error) throw new Error(errorMessage(error));
@@ -311,7 +333,7 @@ export async function insertExpense(businessId: string, expense: Omit<Expense, '
 }
 
 export async function upsertInventory(businessId: string, item: Omit<InventoryItem, 'id'> & { id?: string }) {
-  const supplierId = await upsertName('vendors', businessId, item.supplier);
+  const supplierId = await upsertName('vendors', businessId, item.supplier, item.supplierPhone);
   const payload = {
     business_id: businessId,
     supplier_id: supplierId,
@@ -335,6 +357,24 @@ export async function upsertInventory(businessId: string, item: Omit<InventoryIt
 export async function removeInventory(businessId: string, id: string) {
   const { error } = await supabase.from('inventory_items').delete().eq('business_id', businessId).eq('id', id);
   if (error) throw new Error(errorMessage(error));
+}
+
+export async function updateSalePayment(businessId: string, saleId: string, paymentStatus: PaymentStatus, paidAmount: number, paymentReceivedDate: string, paymentReceivedMethod: string, payerPhone: string) {
+  const { data, error } = await supabase.from('sales').update({ payment_status: paymentStatus, paid_paisa: paisa(paidAmount), payment_received_date: paymentReceivedDate || null, payment_received_method: paymentReceivedMethod || null, payer_phone: payerPhone || null }).eq('business_id', businessId).eq('id', saleId).select('id, payment_status, paid_paisa, payment_received_date, payment_received_method, payer_phone').single();
+  if (error) throw new Error(errorMessage(error));
+  return data;
+}
+
+export async function updateBillPayment(businessId: string, billId: string, paymentStatus: PaymentStatus, paidAmount: number) {
+  const { data, error } = await supabase.from('purchase_bills').update({ payment_status: paymentStatus, paid_paisa: paisa(paidAmount) }).eq('business_id', businessId).eq('id', billId).select('id, payment_status, paid_paisa').single();
+  if (error) throw new Error(errorMessage(error));
+  return data;
+}
+
+export async function applyStockMovement(businessId: string, inventoryItemId: string, movementType: 'inbound' | 'outbound' | 'adjustment', quantity: number, unitCost: number, sourceType: string, sourceId: string) {
+  const { data, error } = await supabase.rpc('apply_stock_movement', { payload: { businessId, inventoryItemId, movementType, quantity, unitCostPaisa: paisa(unitCost), sourceType, sourceId } });
+  if (error) throw new Error(errorMessage(error));
+  return requiredId(data, 'Stock movement was not saved');
 }
 
 export async function upsertEmployee(businessId: string, employee: Omit<Employee, 'id'> & { id?: string }) {
