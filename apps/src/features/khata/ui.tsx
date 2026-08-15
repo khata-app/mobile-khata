@@ -88,7 +88,7 @@ export function Screen({ children, scroll = true }: { children: React.ReactNode;
     <SafeAreaView style={styles.safe}>
       <FocusAwareStatusBar />
       <ImageBackground source={require('../../../assets/landing/notebook-desk.jpg')} resizeMode="cover" imageStyle={styles.backgroundImage} style={styles.background}>
-        {scroll ? <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" refreshControl={sync ? <RefreshControl refreshing={sync.refreshing} onRefresh={() => { void sync.refresh(); }} tintColor={C.brick} colors={[C.brick]} /> : undefined} onScroll={workspace ? event => workspace.setScrollOffset(event.nativeEvent.contentOffset.y) : undefined} scrollEventThrottle={16}>{content}</ScrollView> : content}
+        {scroll ? <ScrollView ref={scrollRef} style={styles.scrollView} contentContainerStyle={styles.scroll} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" refreshControl={sync ? <RefreshControl refreshing={sync.refreshing} onRefresh={() => { void sync.refresh(); }} tintColor={C.brick} colors={[C.brick]} /> : undefined} onScroll={workspace ? event => workspace.setScrollOffset(event.nativeEvent.contentOffset.y) : undefined} scrollEventThrottle={16}>{content}</ScrollView> : content}
       </ImageBackground>
     </SafeAreaView>
   );
@@ -191,8 +191,9 @@ export const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.cream },
   background: { flex: 1, backgroundColor: C.cream },
   backgroundImage: { opacity: 0.065 },
-  scroll: { paddingBottom: 36 },
-  container: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 18, gap: 16 },
+  scrollView: { width: '100%', minWidth: 0 },
+  scroll: { width: '100%', minWidth: 0, paddingBottom: 36 },
+  container: { width: '100%', minWidth: 0, maxWidth: 1180, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 18, gap: 16 },
   titleBlock: { gap: 5, marginBottom: 2, borderBottomColor: C.border, borderBottomWidth: 1, paddingBottom: 14 },
   eyebrow: { color: C.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
   title: { color: C.ink, fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.4, fontFamily: SERIF },

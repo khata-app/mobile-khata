@@ -26,3 +26,13 @@
 @layer utilities {
   .text-balance { text-wrap: balance; }
 }
+
+/* Keep the mobile web canvas inside the viewport. Individual report tables
+   own their horizontal scrolling; the page itself must never become wider
+   than the phone and trigger an extreme browser zoom-out. */
+html, body, #root {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
