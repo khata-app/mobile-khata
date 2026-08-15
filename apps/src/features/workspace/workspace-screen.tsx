@@ -6,15 +6,15 @@ import { useAuthStore as useAuth } from '@/features/auth/use-auth-store';
 import DashboardScreen from '@/features/dashboard/dashboard-screen';
 import AccountingScreen from '@/features/accounting/accounting-screen';
 import { KhataLogo } from '@/features/khata/brand';
-import { BarChartIcon, BoxIcon, BuildingIcon, BuyIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CoinsIcon, FileTextIcon, GearIcon, GridIcon, HomeIcon, LedgerIcon, LogOutIcon, ReceiptIcon, SellIcon, UsersIcon } from '@/features/khata/icons';
+import { BarChartIcon, BoxIcon, BuildingIcon, BuyIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CoinsIcon, FileTextIcon, GearIcon, GridIcon, HomeIcon, LedgerIcon, LogOutIcon, ReceiptIcon, SellIcon, UsersIcon, WalletIcon } from '@/features/khata/icons';
 import { useKhataStore } from '@/features/khata/store';
 import { C, SERIF, WorkspaceScreenProvider } from '@/features/khata/ui';
 import ReportsScreen from '@/features/reports/reports-screen';
 import SettingsScreen from '@/features/settings/settings-screen';
 import { InventoryPanel } from './inventory-panel';
-import { BillsPanel, EmployeesPanel, ExpensesPanel, PurchasePanel, SalesInvoicePanel, SalesPanel } from './workspace-panels';
+import { BillsPanel, EmployeesPanel, ExpensesPanel, PurchasePanel, ReceivablesPanel, SalesInvoicePanel, SalesPanel } from './workspace-panels';
 
-type Section = 'dashboard' | 'purchase-scan' | 'sales-scan' | 'bills' | 'inventory' | 'sales' | 'accounting' | 'expenses' | 'employees' | 'reports' | 'settings';
+type Section = 'dashboard' | 'purchase-scan' | 'sales-scan' | 'bills' | 'inventory' | 'sales' | 'accounting' | 'receivables' | 'expenses' | 'employees' | 'reports' | 'settings';
 
 const nav: Array<{ id: Section; label: string; icon: typeof GridIcon }> = [
   { id: 'dashboard', label: 'Overview', icon: GridIcon },
@@ -24,6 +24,7 @@ const nav: Array<{ id: Section; label: string; icon: typeof GridIcon }> = [
   { id: 'inventory', label: 'Inventory', icon: BoxIcon },
   { id: 'sales', label: 'Sales history', icon: BarChartIcon },
   { id: 'accounting', label: 'Accounting', icon: LedgerIcon },
+  { id: 'receivables', label: 'Receivables', icon: WalletIcon },
   { id: 'expenses', label: 'Expenses', icon: CoinsIcon },
   { id: 'employees', label: 'Team', icon: UsersIcon },
   { id: 'reports', label: 'Reports', icon: FileTextIcon },
@@ -125,13 +126,15 @@ export function WorkspaceScreen({ initialSection = 'dashboard' }: { initialSecti
                 ? <SalesPanel onNavigate={navigate} />
                 : section === 'accounting'
                   ? <AccountingScreen />
-              : section === 'expenses'
-                ? <ExpensesPanel />
-                : section === 'employees'
-                  ? <EmployeesPanel />
-                  : section === 'reports'
-                    ? <ReportsScreen onNavigate={navigate} />
-                    : <SettingsScreen onNavigate={navigate} />;
+                  : section === 'receivables'
+                    ? <ReceivablesPanel />
+                    : section === 'expenses'
+                      ? <ExpensesPanel />
+                      : section === 'employees'
+                        ? <EmployeesPanel />
+                        : section === 'reports'
+                          ? <ReportsScreen onNavigate={navigate} />
+                          : <SettingsScreen onNavigate={navigate} />;
   const workspaceContent = <WorkspaceScreenProvider section={section} refreshing={syncing} refresh={refresh} scrollOffset={scrollOffsets.current[section] || 0} onScrollOffsetChange={offset => updateScrollOffset(section, offset)}>{content}</WorkspaceScreenProvider>;
 
   return (
@@ -237,6 +240,7 @@ function CompanyMenu({ visible, onClose, company, onNavigate }: { visible: boole
     { icon: BuildingIcon, label: 'Company profile', detail: 'Business details and defaults', onPress: () => { onClose(); router.push('/company'); } },
     { icon: FileTextIcon, label: 'Reports', detail: 'Day book, profit and stock', onPress: () => { onClose(); onNavigate('reports'); } },
     { icon: LedgerIcon, label: 'Accounting', detail: 'Balanced vouchers and ledger lines', onPress: () => { onClose(); onNavigate('accounting'); } },
+    { icon: WalletIcon, label: 'Receivables', detail: 'Customer and supplier balances', onPress: () => { onClose(); onNavigate('receivables'); } },
     { icon: GearIcon, label: 'Settings', detail: 'Business details and sync', onPress: () => { onClose(); onNavigate('settings'); } },
     { icon: LogOutIcon, label: 'Sign out', detail: 'End this session on this device', onPress: async () => { onClose(); await signOut(); } },
   ];

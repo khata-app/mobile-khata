@@ -23,6 +23,8 @@ export type CompanySetup = {
   confirmations: boolean;
 };
 
+export type PaymentStatus = 'paid' | 'pending' | 'partially_paid';
+
 export type Bill = {
   id: string;
   vendor: string;
@@ -32,6 +34,9 @@ export type Bill = {
   vat: number;
   payment: string;
   status: 'saved' | 'review';
+  paymentStatus?: PaymentStatus;
+  paidAmount?: number;
+  vendorPhone?: string;
 };
 
 export type InventoryItem = {
@@ -45,6 +50,7 @@ export type InventoryItem = {
   purchaseCost: number;
   sellingPrice: number;
   supplier: string;
+  supplierPhone?: string;
 };
 
 export type Sale = {
@@ -55,6 +61,12 @@ export type Sale = {
   cost: number;
   payment: string;
   itemCount: number;
+  paymentStatus?: PaymentStatus;
+  paidAmount?: number;
+  customerPhone?: string;
+  paymentReceivedDate?: string;
+  paymentReceivedMethod?: string;
+  payerPhone?: string;
 };
 
 export type Expense = {

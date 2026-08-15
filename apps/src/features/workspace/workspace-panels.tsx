@@ -35,6 +35,12 @@ const paymentOptions = [
   { label: 'Online payment', value: 'Online payment' },
 ];
 
+const paymentStatusOptions = [
+  { label: 'Paid', value: 'paid' },
+  { label: 'Partially paid', value: 'partially_paid' },
+  { label: 'Pending', value: 'pending' },
+];
+
 const expenseCategoryOptions = [
   { label: 'General', value: 'General' },
   { label: 'Rent', value: 'Rent' },
@@ -93,7 +99,7 @@ export function BillsPanel({ onNavigate }: { onNavigate: (section: string) => vo
         <Stat label="Purchase total" value={money(bills.reduce((s, b) => s + b.total, 0))} hint="Current period" tone="gold" />
       </View>
       <SectionHeader title="Purchase register" detail="Supplier, invoice, date and amount" action={<Button label="New purchase" icon={<PlusIcon size={16} color={C.white} />} onPress={() => onNavigate('purchase-scan')} />} />
-      {bills.map(bill => <Record key={bill.id} title={bill.vendor} detail={`${bill.invoice} · ${bill.date} · ${bill.payment}`} amount={money(bill.total)} tone={bill.status === 'saved' ? 'green' : 'gold'} />)}
+      {bills.map(bill => <Record key={bill.id} title={bill.vendor} detail={`${bill.invoice} · ${bill.date} · ${bill.payment} · ${bill.paymentStatus || (bill.payment === 'Credit' ? 'pending' : 'paid')}`} amount={money(bill.total)} tone={bill.status === 'saved' ? 'green' : 'gold'} />)}
       {bills.length === 0 && <Empty text="No purchase bills yet. Scan or enter your first one." />}
     </Screen>
   );
@@ -102,7 +108,7 @@ export function BillsPanel({ onNavigate }: { onNavigate: (section: string) => vo
 export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) => void }) {
   const addBill = useKhataStore.use.addBill();
   const businessId = useKhataStore.use.businessId();
-  const [form, setForm] = useState({ vendor: '', invoice: '', total: '', vat: '', payment: 'Cash' });
+  const [form, setForm] = useState({ vendor: '', vendorPhone: '', invoice: '', total: '', vat: '', payment: 'Cash', paymentStatus: 'paid', paidAmount: '' });
   const [mode, setMode] = useState<'start' | 'manual' | 'review'>('start');
   const [status, setStatus] = useState('Choose one path to add a purchase.');
   const [review, setReview] = useState(false);
@@ -122,7 +128,7 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
       setPendingDocument(asset);
       setMode('review');
       setReview(true);
-      setForm({ vendor: extracted.vendor, invoice: extracted.invoice, total: String(extracted.total || ''), vat: String(extracted.vat || ''), payment: 'Cash' });
+      setForm({ vendor: extracted.vendor, vendorPhone: '', invoice: extracted.invoice, total: String(extracted.total || ''), vat: String(extracted.vat || ''), payment: 'Cash', paymentStatus: 'paid', paidAmount: String(extracted.total || '') });
       setStatus(`Bill read · ${Math.round(extracted.confidence * 100)}% match. Check the fields before saving.`);
     }
     catch (error) {
@@ -134,12 +140,14 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
       setScanning(false);
     }
   };
-  const scanDemo = () => { setPendingDocument(null); setMode('review'); setReview(true); setForm({ vendor: 'Bhatbhateni Supermarket', invoice: 'PUR-1042', total: '8200', vat: '1066', payment: 'Cash' }); setStatus('Demo extraction loaded. Review each field before saving.'); };
+  const scanDemo = () => { setPendingDocument(null); setMode('review'); setReview(true); setForm({ vendor: 'Bhatbhateni Supermarket', vendorPhone: '', invoice: 'PUR-1042', total: '8200', vat: '1066', payment: 'Cash', paymentStatus: 'paid', paidAmount: '8200' }); setStatus('Demo extraction loaded. Review each field before saving.'); };
   const startManual = () => { setPendingDocument(null); setMode('manual'); setReview(false); setStatus('Manual entry ready.'); };
   const save = async () => {
     if (!form.vendor || !num(form.total))
       return;
-    const bill = { vendor: form.vendor, invoice: form.invoice || 'PUR-DRAFT', date: new Date().toISOString().slice(0, 10), total: num(form.total), vat: num(form.vat), payment: form.payment, status: 'saved' as const };
+    const total = num(form.total);
+    const paidAmount = form.paymentStatus === 'paid' ? total : Math.min(total, num(form.paidAmount));
+    const bill = { vendor: form.vendor, vendorPhone: form.vendorPhone, invoice: form.invoice || 'PUR-DRAFT', date: new Date().toISOString().slice(0, 10), total, vat: num(form.vat), payment: form.payment, paymentStatus: form.paymentStatus as 'paid' | 'pending' | 'partially_paid', paidAmount, status: 'saved' as const };
     let documentFailed = false;
     if (businessId && pendingDocument) {
       setStatus('Saving the purchase and its original bill…');
@@ -155,7 +163,7 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
     setPendingDocument(null);
     setMode('start');
     setReview(false);
-    setForm({ vendor: '', invoice: '', total: '', vat: '', payment: 'Cash' });
+    setForm({ vendor: '', vendorPhone: '', invoice: '', total: '', vat: '', payment: 'Cash', paymentStatus: 'paid', paidAmount: '' });
     onNavigate('bills');
   };
   return (
@@ -182,13 +190,18 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
           {review && <Chip tone="gold" icon={<AlertTriangleIcon size={12} color={C.goldDark} />}>Check supplier, totals and VAT before saving</Chip>}
           <View style={styles.fieldRow}>
             <Field label="Supplier name" value={form.vendor} onChangeText={value => update('vendor', value)} placeholder="Supplier or vendor" />
+            <Field label="Supplier phone" value={form.vendorPhone} onChangeText={value => update('vendorPhone', value)} keyboardType="phone-pad" placeholder="Optional" />
             <Field label="Invoice number" value={form.invoice} onChangeText={value => update('invoice', value)} placeholder="PUR-0001" />
           </View>
           <View style={styles.fieldRow}>
             <Field label="Grand total" value={form.total} onChangeText={value => update('total', value)} keyboardType="numeric" placeholder="0" />
             <Field label="VAT amount" value={form.vat} onChangeText={value => update('vat', value)} keyboardType="numeric" placeholder="0" />
           </View>
-          <View style={styles.fieldRow}><Select label="Payment method" value={form.payment} options={paymentOptions} onChange={value => update('payment', value)} /></View>
+          <View style={styles.fieldRow}>
+            <Select label="Payment method" value={form.payment} options={paymentOptions} onChange={value => update('payment', value)} />
+            <Select label="Payment status" value={form.paymentStatus} options={paymentStatusOptions} onChange={value => update('paymentStatus', value)} />
+            {form.paymentStatus !== 'paid' && <Field label="Paid so far" value={form.paidAmount} onChangeText={value => update('paidAmount', value)} keyboardType="numeric" placeholder="0" />}
+          </View>
           <View style={styles.buttonRow}>
             <Button label="Save purchase" onPress={save} disabled={!form.vendor || !num(form.total)} />
             <Button label="Cancel" variant="ghost" onPress={() => { setPendingDocument(null); setMode('start'); setReview(false); }} />
@@ -203,20 +216,29 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
 
 export function SalesInvoicePanel({ onNavigate }: { onNavigate: (section: string) => void }) {
   const addSale = useKhataStore.use.addSale();
-  const saveInventory = useKhataStore.use.saveInventory();
+  const recordStockMovement = useKhataStore.use.recordStockMovement();
   const inventory = useKhataStore.use.inventory();
-  const [form, setForm] = useState({ customer: 'Walk-in customer', itemId: '', quantity: '1', total: '', payment: 'Cash' });
+  const [form, setForm] = useState({ customer: 'Walk-in customer', customerPhone: '', itemId: '', quantity: '1', total: '', payment: 'Cash', paymentStatus: 'paid', paidAmount: '' });
   const [captureOpen, setCaptureOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState('');
+  const [saveError, setSaveError] = useState('');
   const update = (key: string, value: string) => setForm(current => ({ ...current, [key]: value }));
   const selectedItem = inventory.find(item => item.id === form.itemId);
   const quantity = num(form.quantity);
   const calculatedCost = selectedItem ? selectedItem.purchaseCost * quantity : 0;
   const save = () => {
-    if (!num(form.total))
-      return; addSale({ customer: form.customer || 'Walk-in customer', date: new Date().toISOString().slice(0, 10), total: num(form.total), cost: calculatedCost, payment: form.payment, itemCount: selectedItem ? quantity : 0 }); if (selectedItem && quantity > 0)
-      saveInventory({ ...selectedItem, stock: Math.max(0, selectedItem.stock - quantity) }); setForm({ customer: 'Walk-in customer', itemId: '', quantity: '1', total: '', payment: 'Cash' }); onNavigate('sales');
+    setSaveError('');
+    if (!num(form.total)) return;
+    if (selectedItem && quantity > selectedItem.stock) {
+      setSaveError(`Only ${selectedItem.stock} ${selectedItem.unit} available. Reduce the quantity before saving.`);
+      return;
+    }
+    const total = num(form.total);
+    const saleId = addSale({ customer: form.customer || 'Walk-in customer', customerPhone: form.customerPhone, date: new Date().toISOString().slice(0, 10), total, cost: calculatedCost, payment: form.payment, paymentStatus: form.paymentStatus as 'paid' | 'pending' | 'partially_paid', paidAmount: form.paymentStatus === 'paid' ? total : Math.min(total, num(form.paidAmount)), itemCount: selectedItem ? quantity : 0 });
+    if (selectedItem && quantity > 0) recordStockMovement(selectedItem.id, 'outbound', quantity, selectedItem.purchaseCost, 'sale', saleId);
+    setForm({ customer: 'Walk-in customer', customerPhone: '', itemId: '', quantity: '1', total: '', payment: 'Cash', paymentStatus: 'paid', paidAmount: '' });
+    onNavigate('sales');
   };
   const scanSale = async (source: 'camera' | 'gallery') => {
     const asset = await pickBill(source);
@@ -227,7 +249,7 @@ export function SalesInvoicePanel({ onNavigate }: { onNavigate: (section: string
     setScanStatus('Reading the receipt…');
     try {
       const extracted = await scanBill(asset.base64, asset.mimeType);
-      setForm(current => ({ ...current, customer: extracted.vendor || current.customer, total: extracted.total ? String(extracted.total) : current.total }));
+      setForm(current => ({ ...current, customer: extracted.vendor || current.customer, total: extracted.total ? String(extracted.total) : current.total, paidAmount: extracted.total ? String(extracted.total) : current.paidAmount }));
       setScanStatus('Receipt read. Check the customer and total before saving.');
     }
     catch {
@@ -254,6 +276,7 @@ export function SalesInvoicePanel({ onNavigate }: { onNavigate: (section: string
         <SectionHeader title="Sale details" detail="Stock is reduced when you choose an item" />
         <View style={styles.fieldRow}>
           <Field label="Customer" value={form.customer} onChangeText={value => update('customer', value)} placeholder="Walk-in customer" />
+          <Field label="Customer phone" value={form.customerPhone} onChangeText={value => update('customerPhone', value)} keyboardType="phone-pad" placeholder="Optional" />
           <Select label="Payment method" value={form.payment} options={paymentOptions} onChange={value => update('payment', value)} />
         </View>
         <View style={styles.fieldRow}>
@@ -262,6 +285,8 @@ export function SalesInvoicePanel({ onNavigate }: { onNavigate: (section: string
         </View>
         <View style={styles.fieldRow}>
           <Field label="Sale total" value={form.total} onChangeText={value => update('total', value)} keyboardType="numeric" placeholder="0" />
+          <Select label="Payment status" value={form.paymentStatus} options={paymentStatusOptions} onChange={value => update('paymentStatus', value)} />
+          {form.paymentStatus !== 'paid' && <Field label="Paid so far" value={form.paidAmount} onChangeText={value => update('paidAmount', value)} keyboardType="numeric" placeholder="0" />}
           <View style={styles.calculated}>
             <Text style={styles.calculatedLabel}>Item cost</Text>
             <Text style={styles.calculatedValue}>{money(calculatedCost)}</Text>
@@ -272,6 +297,7 @@ export function SalesInvoicePanel({ onNavigate }: { onNavigate: (section: string
           <Button label="Save sale" onPress={save} disabled={!num(form.total)} />
           <Button label="View sales" variant="ghost" onPress={() => onNavigate('sales')} />
         </View>
+        {saveError && <Text style={styles.error}>{saveError}</Text>}
       </Card>
       <CaptureModal visible={captureOpen} title="Photograph a sales receipt" busy={scanning} onClose={() => setCaptureOpen(false)} onChoose={(source) => { void scanSale(source); }} />
     </Screen>
@@ -282,7 +308,10 @@ export function SalesPanel({ onNavigate }: { onNavigate: (section: string) => vo
   const sales = useKhataStore.use.sales();
   const total = sales.reduce((s, sale) => s + sale.total, 0);
   const profit = sales.reduce((s, sale) => s + sale.total - sale.cost, 0);
-  const credit = sales.filter(sale => sale.payment === 'Credit').reduce((s, sale) => s + sale.total, 0);
+  const credit = sales.reduce((s, sale) => {
+    const status = sale.paymentStatus || (sale.payment === 'Credit' ? 'pending' : 'paid');
+    return s + (status === 'paid' ? 0 : Math.max(0, sale.total - (sale.paidAmount || 0)));
+  }, 0);
   return (
     <Screen>
       <Title subtitle="Every sale, payment method and amount in one place.">Sales</Title>
@@ -331,6 +360,33 @@ export function SalesPanel({ onNavigate }: { onNavigate: (section: string) => vo
         </Card>
       ))}
       {!sales.length && <Empty text="No sales yet. Create your first sale to start the list." />}
+    </Screen>
+  );
+}
+
+export function ReceivablesPanel() {
+  const sales = useKhataStore.use.sales();
+  const bills = useKhataStore.use.bills();
+  const markSalePaid = useKhataStore.use.markSalePaid();
+  const markBillPaid = useKhataStore.use.markBillPaid();
+  const receivables = sales.filter(sale => (sale.paymentStatus || (sale.payment === 'Credit' ? 'pending' : 'paid')) !== 'paid' && sale.total - (sale.paidAmount || 0) > 0);
+  const payables = bills.filter(bill => (bill.paymentStatus || (bill.payment === 'Credit' ? 'pending' : 'paid')) !== 'paid' && bill.total - (bill.paidAmount || 0) > 0);
+  const outstanding = (total: number, paid = 0) => Math.max(0, total - paid);
+  const confirmSale = (sale: (typeof sales)[number]) => Alert.alert('Mark sale as paid?', `${sale.customer} · ${money(outstanding(sale.total, sale.paidAmount))}`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Confirm', onPress: () => markSalePaid(sale.id) }]);
+  const confirmBill = (bill: (typeof bills)[number]) => Alert.alert('Mark bill as paid?', `${bill.vendor} · ${money(outstanding(bill.total, bill.paidAmount))}`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Confirm', onPress: () => markBillPaid(bill.id) }]);
+  return (
+    <Screen>
+      <Title subtitle="Track money customers still owe and supplier bills still due.">Receivables & payables</Title>
+      <View style={styles.statRow}>
+        <Stat label="Customers owe" value={money(receivables.reduce((sum, sale) => sum + outstanding(sale.total, sale.paidAmount), 0))} hint={`${receivables.length} open sale${receivables.length === 1 ? '' : 's'}`} tone="gold" />
+        <Stat label="You owe suppliers" value={money(payables.reduce((sum, bill) => sum + outstanding(bill.total, bill.paidAmount), 0))} hint={`${payables.length} open bill${payables.length === 1 ? '' : 's'}`} tone="brick" />
+      </View>
+      <SectionHeader title="Customer receivables" detail="Confirm a collection only after the money arrives" />
+      {receivables.map(sale => <Card key={sale.id}><View style={styles.recordTop}><View style={styles.recordCopy}><Text style={styles.recordTitle}>{sale.customer}</Text><Text style={styles.recordDetail}>{sale.date} · {sale.payment} · {sale.customerPhone || 'No phone'}</Text></View><View style={styles.saleAmount}><Text style={styles.recordAmount}>{money(outstanding(sale.total, sale.paidAmount))}</Text><Button label="Mark paid" onPress={() => confirmSale(sale)} /></View></View></Card>)}
+      {!receivables.length && <Empty text="No customer balances are waiting for collection." />}
+      <SectionHeader title="Supplier payables" detail="Bills that still need to be settled" />
+      {payables.map(bill => <Card key={bill.id}><View style={styles.recordTop}><View style={styles.recordCopy}><Text style={styles.recordTitle}>{bill.vendor}</Text><Text style={styles.recordDetail}>{bill.invoice} · {bill.date} · {bill.vendorPhone || 'No phone'}</Text></View><View style={styles.saleAmount}><Text style={styles.recordAmount}>{money(outstanding(bill.total, bill.paidAmount))}</Text><Button label="Mark paid" onPress={() => confirmBill(bill)} /></View></View></Card>)}
+      {!payables.length && <Empty text="No supplier bills are waiting for payment." />}
     </Screen>
   );
 }
@@ -654,6 +710,7 @@ const styles = StyleSheet.create({
   panelTitle: { color: C.ink, fontSize: 18, lineHeight: 24, fontWeight: '800' },
   panelText: { color: C.muted, fontSize: 13, lineHeight: 20 },
   status: { color: C.greenDark, fontSize: 12, fontWeight: '700' },
+  error: { color: C.red, fontSize: 12, lineHeight: 18, fontWeight: '700' },
   calculated: { flex: 1, flexBasis: 220, minWidth: 0, justifyContent: 'center', gap: 4, paddingHorizontal: 12, minHeight: 44, backgroundColor: C.greenLight, borderColor: '#C5D6BA', borderWidth: 1, borderRadius: 10 },
   calculatedLabel: { color: C.greenDark, fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
   calculatedValue: { color: C.greenDark, fontSize: 16, fontWeight: '900' },

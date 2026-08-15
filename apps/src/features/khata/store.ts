@@ -10,11 +10,14 @@ import {
   loadWorkspace,
   removeEmployee as removeRemoteEmployee,
   removeInventory as removeRemoteInventory,
+  applyStockMovement,
+  updateBillPayment,
+  updateSalePayment,
   updateWorkspace,
   upsertEmployee,
   upsertInventory,
 } from '@/lib/supabase-repository';
-import type { Bill, Benefit, Company, CompanySetup, Employee, Expense, InventoryItem, Sale } from './types';
+import type { Bill, Benefit, Company, CompanySetup, Employee, Expense, InventoryItem, PaymentStatus, Sale } from './types';
 
 const DEMO_BUSINESS_ID = 'demo-company';
 const today = new Date().toISOString().slice(0, 10);
@@ -80,13 +83,16 @@ type KhataState = Snapshot & {
   saveCompanySetup: (setup: CompanySetup) => Promise<boolean>;
   setCompany: (company: Company) => void;
   addBill: (bill: Omit<Bill, 'id'>) => void;
-  addSale: (sale: Omit<Sale, 'id'>) => void;
+  addSale: (sale: Omit<Sale, 'id'>) => string;
   addExpense: (expense: Omit<Expense, 'id'>) => void;
   saveInventory: (item: Omit<InventoryItem, 'id'> & { id?: string }) => void;
+  recordStockMovement: (itemId: string, movementType: 'inbound' | 'outbound' | 'adjustment', quantity: number, unitCost: number, sourceType: string, sourceId: string) => void;
   removeInventory: (id: string) => void;
   saveEmployee: (employee: Omit<Employee, 'id'> & { id?: string }) => void;
   removeEmployee: (id: string) => void;
   saveBenefit: (benefit: Omit<Benefit, 'id'> & { id?: string }) => void;
+  markSalePaid: (saleId: string, details?: { paymentStatus?: PaymentStatus; paidAmount?: number; paymentReceivedDate?: string; paymentReceivedMethod?: string; payerPhone?: string }) => void;
+  markBillPaid: (billId: string, details?: { paymentStatus?: PaymentStatus; paidAmount?: number }) => void;
 };
 
 function persist(state: KhataState) {
@@ -246,6 +252,7 @@ const _useKhataStore = create<KhataState>((set, get) => ({
       set(state => ({ sales: state.sales.map(item => item.id === localSale.id ? saved : item) }));
       persist(get());
     });
+    return localSale.id;
   },
   addExpense: expense => {
     const localExpense = { ...expense, id: id('expense') };
@@ -267,6 +274,21 @@ const _useKhataStore = create<KhataState>((set, get) => ({
       const saved = await upsertInventory(businessId, item);
       set(state => ({ inventory: state.inventory.map(existing => existing.id === localItem.id ? saved : existing) }));
       persist(get());
+    });
+  },
+  recordStockMovement: (itemId, movementType, quantity, unitCost, sourceType, sourceId) => {
+    if (quantity <= 0) return;
+    const existing = get().inventory.find(item => item.id === itemId);
+    if (!existing) return;
+    const nextStock = movementType === 'outbound' ? existing.stock - quantity : existing.stock + quantity;
+    if (nextStock < 0) return;
+    const updated = { ...existing, stock: nextStock };
+    set(state => ({ inventory: state.inventory.map(item => item.id === itemId ? updated : item) }));
+    persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId) && isUuid(itemId)) runSync(async () => {
+      await applyStockMovement(businessId, itemId, movementType, quantity, unitCost, sourceType, sourceId);
+      await get().refresh();
     });
   },
   removeInventory: inventoryId => {
@@ -301,6 +323,32 @@ const _useKhataStore = create<KhataState>((set, get) => ({
       const saved = await insertBenefit(businessId, benefit);
       set(state => ({ benefits: state.benefits.map(existing => existing.id === localBenefit.id ? saved : existing) }));
       persist(get());
+    });
+  },
+  markSalePaid: (saleId, details = {}) => {
+    const existing = get().sales.find(sale => sale.id === saleId);
+    if (!existing) return;
+    const paidAmount = Math.max(0, Math.min(existing.total, details.paidAmount ?? existing.total));
+    const paymentStatus = details.paymentStatus || (paidAmount >= existing.total ? 'paid' : paidAmount > 0 ? 'partially_paid' : 'pending');
+    const updated: Sale = { ...existing, paymentStatus, paidAmount, paymentReceivedDate: details.paymentReceivedDate || new Date().toISOString().slice(0, 10), paymentReceivedMethod: details.paymentReceivedMethod || existing.payment, payerPhone: details.payerPhone || existing.payerPhone };
+    set(state => ({ sales: state.sales.map(sale => sale.id === saleId ? updated : sale) }));
+    persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId) && saleId.length > 20) runSync(async () => {
+      await updateSalePayment(businessId, saleId, paymentStatus, paidAmount, updated.paymentReceivedDate || '', updated.paymentReceivedMethod || '', updated.payerPhone || '');
+    });
+  },
+  markBillPaid: (billId, details = {}) => {
+    const existing = get().bills.find(bill => bill.id === billId);
+    if (!existing) return;
+    const paidAmount = Math.max(0, Math.min(existing.total, details.paidAmount ?? existing.total));
+    const paymentStatus = details.paymentStatus || (paidAmount >= existing.total ? 'paid' : paidAmount > 0 ? 'partially_paid' : 'pending');
+    const updated: Bill = { ...existing, paymentStatus, paidAmount };
+    set(state => ({ bills: state.bills.map(bill => bill.id === billId ? updated : bill) }));
+    persist(get());
+    const businessId = get().businessId;
+    if (isRemoteBusiness(businessId) && billId.length > 20) runSync(async () => {
+      await updateBillPayment(businessId, billId, paymentStatus, paidAmount);
     });
   },
 }));
