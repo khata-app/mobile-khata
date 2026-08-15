@@ -2,7 +2,7 @@ import type { Benefit, Bill, Employee, Expense, InventoryItem, Sale } from '@/fe
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { AlertTriangleIcon, ArrowRightIcon, BarChartIcon, BoxIcon, BuyIcon, CameraIcon, CoinsIcon, FileTextIcon, GearIcon, ReceiptIcon, SellIcon, UsersIcon, WalletIcon } from '@/features/khata/icons';
-import { C, Card, Eyebrow, Screen, SectionHeader, SERIF, Text, Title } from '@/features/khata/ui';
+import { C, Card, Eyebrow, Screen, SectionHeader, SERIF, Text } from '@/features/khata/ui';
 import { buildInsights } from '@/features/insights/insight-utils';
 
 type Props = {
@@ -62,7 +62,6 @@ export function DashboardScreen({ bills, inventory, sales, expenses, employees, 
       <View style={styles.top}>
         <View style={styles.topCopy}>
           <Eyebrow>{displayDate}</Eyebrow>
-          <Title subtitle="Sales, purchases and stock—right where you need them.">Good morning</Title>
         </View>
       </View>
 
