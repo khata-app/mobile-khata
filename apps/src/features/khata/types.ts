@@ -25,6 +25,8 @@ export type CompanySetup = {
 
 export type PaymentStatus = 'paid' | 'pending' | 'partially_paid';
 
+export type BillLineItem = { description: string; quantity: number; unitPrice: number; amount: number };
+
 export type Bill = {
   id: string;
   vendor: string;
@@ -37,6 +39,7 @@ export type Bill = {
   paymentStatus?: PaymentStatus;
   paidAmount?: number;
   vendorPhone?: string;
+  lineItems?: BillLineItem[];
 };
 
 export type InventoryItem = {
@@ -76,6 +79,8 @@ export type Expense = {
   date: string;
   amount: number;
   payment: string;
+  tdsRate?: number;
+  tdsAmount?: number;
 };
 
 export type Employee = {

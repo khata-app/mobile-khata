@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Bill, Employee, InventoryItem } from '@/features/khata/types';
+import type { Bill, BillLineItem, Employee, InventoryItem } from '@/features/khata/types';
 import * as ImagePicker from 'expo-image-picker';
 import { useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -7,6 +7,7 @@ import { AlertTriangleIcon, BoxIcon, CameraIcon, EditIcon, PlusIcon, ReceiptIcon
 import { useKhataStore } from '@/features/khata/store';
 import { Button, C, Card, Chip, Eyebrow, Field, Screen, SectionHeader, Select, Stat, Text, Title } from '@/features/khata/ui';
 import { saveBillDocument, scanBill } from '@/lib/supabase-repository';
+import { calculateTds } from '@/features/tax/domain';
 
 const money = (value: number) => `NPR ${Math.round(value).toLocaleString()}`;
 const num = (value: string) => Number(value) || 0;
@@ -39,6 +40,12 @@ const paymentStatusOptions = [
   { label: 'Paid', value: 'paid' },
   { label: 'Partially paid', value: 'partially_paid' },
   { label: 'Pending', value: 'pending' },
+];
+
+const tdsRateOptions = [
+  { label: 'No TDS', value: '0' },
+  { label: 'TDS 1.5%', value: '1.5' },
+  { label: 'TDS 10%', value: '10' },
 ];
 
 const expenseCategoryOptions = [
@@ -115,7 +122,12 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
   const [scanning, setScanning] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [pendingDocument, setPendingDocument] = useState<CaptureAsset | null>(null);
+  const [lineItems, setLineItems] = useState<BillLineItem[]>([]);
   const update = (key: string, value: string) => setForm(current => ({ ...current, [key]: value }));
+  const updateLineItem = (index: number, key: keyof BillLineItem, value: string) => setLineItems(items => items.map((item, itemIndex) => {
+    if (itemIndex !== index) return item;
+    return key === 'description' ? { ...item, description: value } : { ...item, [key]: num(value) };
+  }));
   const scanDocument = async (source: 'camera' | 'gallery') => {
     const asset = await pickBill(source);
     if (!asset) { setStatus('No image selected. You can still enter the purchase manually.'); return; }
@@ -128,6 +140,7 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
       setPendingDocument(asset);
       setMode('review');
       setReview(true);
+      setLineItems(extracted.lineItems);
       setForm({ vendor: extracted.vendor, vendorPhone: '', invoice: extracted.invoice, total: String(extracted.total || ''), vat: String(extracted.vat || ''), payment: 'Cash', paymentStatus: 'paid', paidAmount: String(extracted.total || '') });
       setStatus(`Bill read · ${Math.round(extracted.confidence * 100)}% match. Check the fields before saving.`);
     }
@@ -140,27 +153,32 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
       setScanning(false);
     }
   };
-  const scanDemo = () => { setPendingDocument(null); setMode('review'); setReview(true); setForm({ vendor: 'Bhatbhateni Supermarket', vendorPhone: '', invoice: 'PUR-1042', total: '8200', vat: '1066', payment: 'Cash', paymentStatus: 'paid', paidAmount: '8200' }); setStatus('Demo extraction loaded. Review each field before saving.'); };
-  const startManual = () => { setPendingDocument(null); setMode('manual'); setReview(false); setStatus('Manual entry ready.'); };
+  const scanDemo = () => { setPendingDocument(null); setMode('review'); setReview(true); setLineItems([{ description: 'Rice 25kg', quantity: 2, unitPrice: 3500, amount: 7000 }, { description: 'Delivery', quantity: 1, unitPrice: 134, amount: 134 }]); setForm({ vendor: 'Bhatbhateni Supermarket', vendorPhone: '', invoice: 'PUR-1042', total: '8200', vat: '1066', payment: 'Cash', paymentStatus: 'paid', paidAmount: '8200' }); setStatus('Demo extraction loaded. Review each field before saving.'); };
+  const startManual = () => { setPendingDocument(null); setLineItems([]); setMode('manual'); setReview(false); setStatus('Manual entry ready.'); };
   const save = async () => {
     if (!form.vendor || !num(form.total))
       return;
     const total = num(form.total);
     const paidAmount = form.paymentStatus === 'paid' ? total : Math.min(total, num(form.paidAmount));
-    const bill = { vendor: form.vendor, vendorPhone: form.vendorPhone, invoice: form.invoice || 'PUR-DRAFT', date: new Date().toISOString().slice(0, 10), total, vat: num(form.vat), payment: form.payment, paymentStatus: form.paymentStatus as 'paid' | 'pending' | 'partially_paid', paidAmount, status: 'saved' as const };
+    const bill = { vendor: form.vendor, vendorPhone: form.vendorPhone, invoice: form.invoice || 'PUR-DRAFT', date: new Date().toISOString().slice(0, 10), total, vat: num(form.vat), payment: form.payment, paymentStatus: form.paymentStatus as 'paid' | 'pending' | 'partially_paid', paidAmount, lineItems, status: 'saved' as const };
     let documentFailed = false;
     if (businessId && pendingDocument) {
       setStatus('Saving the purchase and its original bill…');
       try {
         await saveBillDocument(businessId, pendingDocument.base64, pendingDocument.mimeType, bill);
       }
-      catch {
+      catch (error) {
+        if (error instanceof Error && error.message.includes('already in the review queue')) {
+          setStatus(error.message);
+          return;
+        }
         documentFailed = true;
       }
     }
     addBill(bill);
     setStatus(documentFailed ? 'Purchase saved, but the original image could not be attached.' : businessId ? 'Purchase saved and queued for Supabase.' : 'Purchase saved to this workspace.');
     setPendingDocument(null);
+    setLineItems([]);
     setMode('start');
     setReview(false);
     setForm({ vendor: '', vendorPhone: '', invoice: '', total: '', vat: '', payment: 'Cash', paymentStatus: 'paid', paidAmount: '' });
@@ -202,9 +220,18 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
             <Select label="Payment status" value={form.paymentStatus} options={paymentStatusOptions} onChange={value => update('paymentStatus', value)} />
             {form.paymentStatus !== 'paid' && <Field label="Paid so far" value={form.paidAmount} onChangeText={value => update('paidAmount', value)} keyboardType="numeric" placeholder="0" />}
           </View>
+          {review && lineItems.length > 0 && <>
+            <SectionHeader title="Review line items" detail="Correct OCR quantities and amounts before saving" />
+            {lineItems.map((item, index) => <View style={styles.fieldRow} key={`${item.description}-${index}`}>
+              <Field label={`Item ${index + 1}`} value={item.description} onChangeText={value => updateLineItem(index, 'description', value)} placeholder="Description" />
+              <Field label="Quantity" value={String(item.quantity)} onChangeText={value => updateLineItem(index, 'quantity', value)} keyboardType="numeric" />
+              <Field label="Unit price" value={String(item.unitPrice)} onChangeText={value => updateLineItem(index, 'unitPrice', value)} keyboardType="numeric" />
+              <Field label="Amount" value={String(item.amount)} onChangeText={value => updateLineItem(index, 'amount', value)} keyboardType="numeric" />
+            </View>)}
+          </>}
           <View style={styles.buttonRow}>
             <Button label="Save purchase" onPress={save} disabled={!form.vendor || !num(form.total)} />
-            <Button label="Cancel" variant="ghost" onPress={() => { setPendingDocument(null); setMode('start'); setReview(false); }} />
+            <Button label="Cancel" variant="ghost" onPress={() => { setPendingDocument(null); setLineItems([]); setMode('start'); setReview(false); }} />
             <Button label="Open bills" variant="ghost" onPress={() => onNavigate('bills')} />
           </View>
         </Card>
@@ -394,11 +421,11 @@ export function ReceivablesPanel() {
 export function ExpensesPanel() {
   const expenses = useKhataStore.use.expenses();
   const addExpense = useKhataStore.use.addExpense();
-  const [form, setForm] = useState({ category: 'General', description: '', amount: '', payment: 'Cash' });
+  const [form, setForm] = useState({ category: 'General', description: '', amount: '', payment: 'Cash', tdsRate: '0' });
   const update = (key: string, value: string) => setForm(current => ({ ...current, [key]: value }));
   const save = () => {
     if (!form.description || !num(form.amount))
-      return; addExpense({ category: form.category, description: form.description, date: new Date().toISOString().slice(0, 10), amount: num(form.amount), payment: form.payment }); setForm({ category: 'General', description: '', amount: '', payment: 'Cash' });
+      return; addExpense({ category: form.category, description: form.description, date: new Date().toISOString().slice(0, 10), amount: num(form.amount), payment: form.payment, tdsRate: num(form.tdsRate), tdsAmount: calculateTds(num(form.amount), num(form.tdsRate)).tax }); setForm({ category: 'General', description: '', amount: '', payment: 'Cash', tdsRate: '0' });
   };
   return (
     <Screen>
@@ -416,11 +443,12 @@ export function ExpensesPanel() {
         <View style={styles.fieldRow}>
           <Field label="Amount" value={form.amount} onChangeText={value => update('amount', value)} keyboardType="numeric" placeholder="0" />
           <Select label="Payment method" value={form.payment} options={paymentOptions} onChange={value => update('payment', value)} />
+          <Select label="TDS" value={form.tdsRate} options={tdsRateOptions} onChange={value => update('tdsRate', value)} />
         </View>
         <Button label="Save expense" onPress={save} disabled={!form.description || !num(form.amount)} />
       </Card>
       <SectionHeader title="Expense register" />
-      {expenses.map(expense => <Record key={expense.id} title={expense.description} detail={`${expense.category} · ${expense.date} · ${expense.payment}`} amount={money(expense.amount)} tone="red" />)}
+      {expenses.map(expense => <Record key={expense.id} title={expense.description} detail={`${expense.category} · ${expense.date} · ${expense.payment}${expense.tdsAmount ? ` · TDS ${money(expense.tdsAmount)}` : ''}`} amount={money(expense.amount)} tone="red" />)}
     </Screen>
   );
 }
