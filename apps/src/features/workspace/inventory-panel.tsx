@@ -191,7 +191,10 @@ const styles = StyleSheet.create({
   sheetHelp: { color: C.muted, fontSize: 11, marginTop: 3 },
   deleteButton: { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 9, backgroundColor: C.redLight, borderColor: '#D9A693', borderWidth: 1, borderRadius: 8 },
   deleteText: { color: C.red, fontSize: 11, fontWeight: '800' },
-  form: { gap: 11, paddingVertical: 16 },
+  // Keep the scroll content sized to its fields. Without this, the shared
+  // `field` style's flex growth can stretch the first field on mobile web,
+  // leaving a large blank gap before the category controls.
+  form: { flexGrow: 0, gap: 11, paddingVertical: 16 },
   fieldRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', paddingTop: 4 },
   pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
