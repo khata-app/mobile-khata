@@ -1,6 +1,7 @@
 import { isSupabaseConfigured, supabase } from './supabase';
 import type { Benefit, Bill, Company, CompanySetup, Employee, Expense, InventoryItem, PaymentStatus, Sale } from '@/features/khata/types';
 import { fromPaisa, toPaisa, validateVoucher, type Account, type PostVoucherInput, type PostedVoucher } from '@/features/accounting/domain';
+import type { TaxRate } from '@/features/tax/domain';
 
 type ObjectValue = Record<string, unknown>;
 
@@ -61,6 +62,12 @@ function requiredId(value: unknown, message: string) {
 
 function isUuid(value: string | undefined) {
   return Boolean(value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value));
+}
+
+function documentHash(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
+  return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
 export type WorkspaceData = {
@@ -129,6 +136,27 @@ export async function listAccounts(businessId: string): Promise<Account[]> {
   }));
 }
 
+export async function listTaxRates(businessId: string): Promise<TaxRate[]> {
+  if (!isSupabaseConfigured) return [];
+  const seeded = await supabase.rpc('ensure_default_tax_rates', { target_business: businessId });
+  if (seeded.error) throw new Error(errorMessage(seeded.error));
+  const { data, error } = await supabase.from('tax_rates').select('code, name, rate, kind').eq('business_id', businessId).eq('is_active', true).order('kind').order('rate');
+  if (error) throw new Error(errorMessage(error));
+  return rows(data).map(row => ({ code: stringValue(row.code), name: stringValue(row.name), rate: numberValue(row.rate), kind: stringValue(row.kind, 'vat') as TaxRate['kind'] }));
+}
+
+export async function upsertTaxRate(businessId: string, taxRate: TaxRate) {
+  if (!isSupabaseConfigured) return taxRate;
+  const { data, error } = await supabase.from('tax_rates').upsert({ business_id: businessId, code: taxRate.code, name: taxRate.name, kind: taxRate.kind, rate: taxRate.rate, is_active: true }, { onConflict: 'business_id,code' }).select('code, name, rate, kind').single();
+  if (error) throw new Error(errorMessage(error));
+  if (taxRate.kind === 'vat') {
+    const settings = await supabase.from('business_settings').update({ vat_rate: taxRate.rate }).eq('business_id', businessId);
+    if (settings.error) throw new Error(errorMessage(settings.error));
+  }
+  const row = objectValue(data);
+  return { code: stringValue(row.code), name: stringValue(row.name), rate: numberValue(row.rate), kind: stringValue(row.kind, 'vat') as TaxRate['kind'] };
+}
+
 export async function postVoucher(input: PostVoucherInput): Promise<PostedVoucher> {
   if (!isSupabaseConfigured) throw new Error('Configure Supabase before posting a voucher.');
   validateVoucher(input);
@@ -192,7 +220,7 @@ export async function loadWorkspace(): Promise<WorkspaceData | null> {
     supabase.from('purchase_bills').select('id, invoice_number, invoice_date, total_paisa, vat_paisa, payment_method, status, payment_status, paid_paisa, vendors(name, phone)').eq('business_id', businessId).order('invoice_date', { ascending: false }),
     supabase.from('inventory_items').select('id, name, category, unit, stock_quantity, daily_requirement, reorder_level, purchase_cost_paisa, selling_price_paisa, vendors(name, phone)').eq('business_id', businessId).order('created_at', { ascending: false }),
     supabase.from('sales').select('id, sale_date, total_paisa, cost_paisa, payment_method, item_count, payment_status, paid_paisa, payment_received_date, payment_received_method, payer_phone, customers(name, phone)').eq('business_id', businessId).order('sale_date', { ascending: false }),
-    supabase.from('expenses').select('id, category, description, expense_date, amount_paisa, payment_method').eq('business_id', businessId).order('expense_date', { ascending: false }),
+    supabase.from('expenses').select('id, category, description, expense_date, amount_paisa, payment_method, tds_rate, tds_paisa').eq('business_id', businessId).order('expense_date', { ascending: false }),
     supabase.from('employees').select('id, name, department, phone, status, salary_paisa').eq('business_id', businessId).order('created_at', { ascending: false }),
     supabase.from('employee_benefits').select('id, employee_id, benefit_type, amount_paisa, benefit_date, payment_method').eq('business_id', businessId).order('benefit_date', { ascending: false }),
   ]);
@@ -250,6 +278,8 @@ export async function loadWorkspace(): Promise<WorkspaceData | null> {
       date: stringValue(row.expense_date),
       amount: rupees(row.amount_paisa),
       payment: stringValue(row.payment_method, 'Cash'),
+      tdsRate: numberValue(row.tds_rate),
+      tdsAmount: rupees(row.tds_paisa),
     })),
     employees: rows(employeesResult.data).map(row => ({
       id: stringValue(row.id),
@@ -326,6 +356,8 @@ export async function insertExpense(businessId: string, expense: Omit<Expense, '
     expense_date: expense.date,
     amount_paisa: paisa(expense.amount),
     payment_method: expense.payment,
+    tds_rate: expense.tdsRate || 0,
+    tds_paisa: paisa(expense.tdsAmount || 0),
     created_by: await currentUserId(),
   }).select('id').single();
   if (error) throw new Error(errorMessage(error));
@@ -419,6 +451,10 @@ export async function seedDemoWorkspace(businessId: string, seed: Omit<Workspace
 }
 
 export async function saveBillDocument(businessId: string, imageBase64: string, mimeType: string, extracted: Record<string, unknown>) {
+  const hash = documentHash(imageBase64);
+  const duplicate = await supabase.from('bill_documents').select('id').eq('business_id', businessId).eq('document_hash', hash).maybeSingle();
+  if (duplicate.error) throw new Error(errorMessage(duplicate.error));
+  if (duplicate.data) throw new Error('This bill image is already in the review queue. Check it before uploading again.');
   const extension = mimeType.split('/')[1] || 'jpg';
   const storagePath = `${businessId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
   const blob = await fetch(`data:${mimeType};base64,${imageBase64}`).then(response => response.blob());
@@ -431,6 +467,7 @@ export async function saveBillDocument(businessId: string, imageBase64: string, 
     extraction_status: 'review',
     extracted_fields: extracted,
     confidence: typeof extracted.confidence === 'number' ? extracted.confidence : null,
+    document_hash: hash,
     created_by: await currentUserId(),
   });
   if (error) throw new Error(errorMessage(error));
@@ -448,5 +485,6 @@ export async function scanBill(imageBase64: string, mimeType: string) {
     total: numberValue(extracted.total),
     vat: numberValue(extracted.vat),
     confidence: numberValue(extracted.confidence),
+    lineItems: rows(extracted.lineItems).map(item => ({ description: stringValue(item.description, 'Line item'), quantity: numberValue(item.quantity, 1), unitPrice: numberValue(item.unitPrice), amount: numberValue(item.amount) })),
   };
 }

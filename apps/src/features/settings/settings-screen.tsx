@@ -1,19 +1,34 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useAuthStore as useAuth } from '@/features/auth/use-auth-store';
 import { BuildingIcon, CalendarIcon, ChevronRightIcon, LogOutIcon, RefreshIcon, UsersIcon } from '@/features/khata/icons';
 import { useKhataStore } from '@/features/khata/store';
-import { Button, C, Card, Chip, Screen, SERIF, Text, Title } from '@/features/khata/ui';
+import { Button, C, Card, Chip, Field, Screen, SERIF, Text, Title } from '@/features/khata/ui';
+import { defaultTaxRates, type TaxRate } from '@/features/tax/domain';
+import { listTaxRates, upsertTaxRate } from '@/lib/supabase-repository';
 
 export function SettingsScreen({ onNavigate }: { onNavigate?: (section: string) => void }) {
   const signOut = useAuth.use.signOut();
   const company = useKhataStore.use.company();
+  const businessId = useKhataStore.use.businessId();
   const refresh = useKhataStore.use.refresh();
   const syncing = useKhataStore.use.syncing();
   const [notice, setNotice] = useState('');
+  const [taxRates, setTaxRates] = useState<TaxRate[]>(defaultTaxRates);
+  const [taxNotice, setTaxNotice] = useState('');
+  useEffect(() => {
+    if (!businessId) return;
+    void listTaxRates(businessId).then(rates => { if (rates.length) setTaxRates(rates); }).catch(() => setTaxNotice('Tax defaults are available locally; sync them when Supabase is ready.'));
+  }, [businessId]);
   const runRefresh = async () => { setNotice('Checking Supabase for the latest workspace data…'); await refresh(); setNotice('Workspace is up to date.'); };
   const leave = async () => { await signOut(); router.replace('/login'); };
+  const updateTaxRate = (index: number, value: string) => setTaxRates(current => current.map((rate, rateIndex) => rateIndex === index ? { ...rate, rate: Number(value) || 0 } : rate));
+  const saveTaxRates = async () => {
+    if (!businessId) { setTaxNotice('Tax defaults updated for this session.'); return; }
+    try { setTaxNotice('Saving tax rates…'); await Promise.all(taxRates.map(rate => upsertTaxRate(businessId, rate))); setTaxNotice('Tax rates saved securely.'); }
+    catch (error) { setTaxNotice(error instanceof Error ? error.message : 'Tax rates could not be saved.'); }
+  };
   const items = [
     { icon: BuildingIcon, title: 'Business profile', detail: 'PAN, city and company defaults', onPress: () => router.replace('/company') },
     { icon: UsersIcon, title: 'Team & permissions', detail: 'Manage employees and benefits', onPress: () => onNavigate ? onNavigate('employees') : router.replace('/dashboard?section=employees') },
@@ -53,6 +68,13 @@ export function SettingsScreen({ onNavigate }: { onNavigate?: (section: string) 
           <ChevronRightIcon size={17} color={C.muted} />
         </Pressable>
       ))}
+      <Card>
+        <Text style={styles.itemTitle}>Tax master</Text>
+        <Text style={styles.itemDetail}>Set the VAT and TDS rates used by purchases, expenses and reports.</Text>
+        {taxRates.map((rate, index) => <View style={styles.taxRow} key={rate.code}><View style={{ flex: 1 }}><Text style={styles.taxName}>{rate.name}</Text><Text style={styles.taxCode}>{rate.code} · {rate.kind.toUpperCase()}</Text></View><Field label="Rate %" value={String(rate.rate)} onChangeText={value => updateTaxRate(index, value)} keyboardType="numeric" /></View>)}
+        <Button label="Save tax rates" variant="outline" onPress={() => { void saveTaxRates(); }} />
+        {taxNotice && <Text style={styles.notice}>{taxNotice}</Text>}
+      </Card>
       <Card style={styles.syncCard}>
         <View style={styles.syncCopy}>
           <Text style={styles.itemTitle}>Sync and offline data</Text>
@@ -86,5 +108,8 @@ const styles = StyleSheet.create({
   syncCard: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
   syncCopy: { flex: 1, minWidth: 220 },
   notice: { width: '100%', color: C.greenDark, fontSize: 12, fontWeight: '700' },
+  taxRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6, borderBottomColor: C.border, borderBottomWidth: 1 },
+  taxName: { color: C.ink, fontSize: 13, fontWeight: '800' },
+  taxCode: { color: C.muted, fontSize: 10, marginTop: 3 },
   signOut: { backgroundColor: C.redLight, borderColor: '#DFB4A4' },
 });

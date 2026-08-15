@@ -1,4 +1,5 @@
 import type { Bill, Benefit, Expense, InventoryItem, Sale } from '@/features/khata/types';
+import { calculateTds } from '@/features/tax/domain';
 
 export type ReportPeriod = 'all' | string;
 
@@ -25,6 +26,7 @@ export type TrialBalanceLine = { account: string; debit: number; credit: number 
 export type StockReportLine = { id: string; name: string; category: string; unit: string; quantity: number; value: number; sellingValue: number; margin: number; low: boolean };
 export type AgeingLine = { id: string; party: string; date: string; reference: string; total: number; paid: number; outstanding: number; bucket: '0-30 days' | '31-60 days' | '61-90 days' | '90+ days' };
 export type VatRegisterLine = { id: string; kind: 'Sale' | 'Purchase'; date: string; party: string; reference: string; taxable: number; vat: number; gross: number };
+export type TdsRegisterLine = { id: string; date: string; party: string; reference: string; base: number; rate: number; tds: number };
 
 export type ReportBundle = {
   period: ReportPeriod;
@@ -38,6 +40,7 @@ export type ReportBundle = {
   receivablesAgeing: AgeingLine[];
   payablesAgeing: AgeingLine[];
   vatRegister: VatRegisterLine[];
+  tdsRegister: TdsRegisterLine[];
 };
 
 const paymentAccount = (payment: string) => payment === 'Credit' ? 'Accounts payable / receivable' : payment === 'Bank transfer' || payment === 'Online payment' ? 'Bank' : 'Cash';
@@ -119,7 +122,8 @@ export function buildReports(input: ReportInputs, period: ReportPeriod = 'all'):
     ...sales.map(item => ({ id: `${item.id}-output`, kind: 'Sale' as const, date: item.date, party: item.customer, reference: item.id, taxable: round(item.total / (100 + rate) * 100), vat: round(item.total - (item.total / (100 + rate) * 100)), gross: round(item.total) })),
     ...bills.map(item => ({ id: `${item.id}-input`, kind: 'Purchase' as const, date: item.date, party: item.vendor, reference: item.invoice || item.id, taxable: round(Math.max(0, item.total - item.vat)), vat: round(item.vat), gross: round(item.total) })),
   ].sort((a, b) => b.date.localeCompare(a.date));
-  return { period, periodLabel: period === 'all' ? 'All recorded entries' : period, dayBook, trialBalance: { lines: trialLines, totalDebit: balancedDebit, totalCredit: balancedCredit }, profitLoss: { revenue, costOfGoodsSold, grossProfit, expenses: expensesTotal, benefits: benefitsTotal, netProfit, margin: revenue ? round((grossProfit / revenue) * 100) : 0 }, balanceSheet: { assets, liabilities, equity, totalAssets, totalLiabilitiesAndEquity: round(totalLiabilities + equity) }, vatSummary: { rate, salesGross: revenue, outputVat: round(outputVat), purchaseGross: round(bills.reduce((sum, item) => sum + item.total, 0)), inputVat: round(inputVat), netVat: round(outputVat - inputVat) }, stockReport, receivablesAgeing, payablesAgeing, vatRegister };
+  const tdsRegister = expenses.filter(item => (item.tdsRate || 0) > 0).map(item => ({ id: item.id, date: item.date, party: item.description, reference: item.id, base: round(item.amount), rate: item.tdsRate || 0, tds: round(item.tdsAmount ?? calculateTds(item.amount, item.tdsRate || 0).tax) }));
+  return { period, periodLabel: period === 'all' ? 'All recorded entries' : period, dayBook, trialBalance: { lines: trialLines, totalDebit: balancedDebit, totalCredit: balancedCredit }, profitLoss: { revenue, costOfGoodsSold, grossProfit, expenses: expensesTotal, benefits: benefitsTotal, netProfit, margin: revenue ? round((grossProfit / revenue) * 100) : 0 }, balanceSheet: { assets, liabilities, equity, totalAssets, totalLiabilitiesAndEquity: round(totalLiabilities + equity) }, vatSummary: { rate, salesGross: revenue, outputVat: round(outputVat), purchaseGross: round(bills.reduce((sum, item) => sum + item.total, 0)), inputVat: round(inputVat), netVat: round(outputVat - inputVat) }, stockReport, receivablesAgeing, payablesAgeing, vatRegister, tdsRegister };
 }
 
 export function reportRows(bundle: ReportBundle, kind: string): Array<Record<string, string | number>> {
@@ -131,6 +135,7 @@ export function reportRows(bundle: ReportBundle, kind: string): Array<Record<str
   if (kind === 'receivables-ageing') return bundle.receivablesAgeing.map(row => ({ Party: row.party, Date: row.date, Reference: row.reference, Bucket: row.bucket, Total: row.total, Paid: row.paid, Outstanding: row.outstanding }));
   if (kind === 'payables-ageing') return bundle.payablesAgeing.map(row => ({ Party: row.party, Date: row.date, Reference: row.reference, Bucket: row.bucket, Total: row.total, Paid: row.paid, Outstanding: row.outstanding }));
   if (kind === 'vat-register') return bundle.vatRegister.map(row => ({ Type: row.kind, Date: row.date, Party: row.party, Reference: row.reference, Taxable: row.taxable, VAT: row.vat, Gross: row.gross }));
+  if (kind === 'tds-register') return bundle.tdsRegister.map(row => ({ Date: row.date, Party: row.party, Reference: row.reference, Base: row.base, Rate: row.rate, TDS: row.tds }));
   return bundle.stockReport.map(row => ({ Product: row.name, Category: row.category, Quantity: row.quantity, Unit: row.unit, 'Stock value': row.value, 'Selling value': row.sellingValue, Margin: row.margin, Status: row.low ? 'Low stock' : 'Healthy' }));
 }
 

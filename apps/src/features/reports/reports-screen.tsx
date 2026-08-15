@@ -9,7 +9,7 @@ import { useKhataStore } from '@/features/khata/store';
 import { Button, C, Card, Chip, Eyebrow, Screen, SectionHeader, Text, Title } from '@/features/khata/ui';
 import { buildReports, reportRows, rowsToCsv } from './report-utils';
 
-type ReportKind = 'day-book' | 'trial-balance' | 'profit-loss' | 'balance-sheet' | 'vat-summary' | 'stock-report' | 'receivables-ageing' | 'payables-ageing' | 'vat-register';
+type ReportKind = 'day-book' | 'trial-balance' | 'profit-loss' | 'balance-sheet' | 'vat-summary' | 'stock-report' | 'receivables-ageing' | 'payables-ageing' | 'vat-register' | 'tds-register';
 
 const reportKinds: Array<{ id: ReportKind; title: string; description: string; icon: typeof LedgerIcon }> = [
   { id: 'day-book', title: 'Day book', description: 'Every sale, purchase and payment', icon: LedgerIcon },
@@ -18,6 +18,7 @@ const reportKinds: Array<{ id: ReportKind; title: string; description: string; i
   { id: 'balance-sheet', title: 'Balance sheet', description: 'What the business owns and owes', icon: BuildingIcon },
   { id: 'vat-summary', title: 'VAT summary', description: 'Output and input VAT', icon: ReceiptIcon },
   { id: 'vat-register', title: 'VAT register', description: 'Transaction-level tax lines', icon: ReceiptIcon },
+  { id: 'tds-register', title: 'TDS register', description: 'Withholding captured on expenses', icon: ReceiptIcon },
   { id: 'receivables-ageing', title: 'Receivables ageing', description: 'Customer balances by age', icon: WalletIcon },
   { id: 'payables-ageing', title: 'Payables ageing', description: 'Supplier balances by age', icon: WalletIcon },
   { id: 'stock-report', title: 'Stock report', description: 'Quantity, value and reorder pressure', icon: BoxIcon },
@@ -193,6 +194,8 @@ function heroValue(kind: ReportKind, bundle: ReportBundle) {
     return money(bundle.payablesAgeing.reduce((sum, row) => sum + row.outstanding, 0));
   if (kind === 'vat-register')
     return `${bundle.vatRegister.length} tax lines`;
+  if (kind === 'tds-register')
+    return money(bundle.tdsRegister.reduce((sum, row) => sum + row.tds, 0));
   if (kind === 'trial-balance')
     return `${money(bundle.trialBalance.totalDebit)} balanced`;
   return `${bundle.dayBook.length} journal lines`;
@@ -213,6 +216,8 @@ function ReportHighlights({ bundle, kind }: { bundle: ReportBundle; kind: Report
     return <View style={styles.highlights}><MiniMetric label="Open suppliers" value={String(bundle.payablesAgeing.length)} /><MiniMetric label="Outstanding" value={money(bundle.payablesAgeing.reduce((sum, row) => sum + row.outstanding, 0))} /><MiniMetric label="Oldest bucket" value={bundle.payablesAgeing[0]?.bucket || 'Clear'} /></View>;
   if (kind === 'vat-register')
     return <View style={styles.highlights}><MiniMetric label="Sales lines" value={String(bundle.vatRegister.filter(row => row.kind === 'Sale').length)} /><MiniMetric label="Purchase lines" value={String(bundle.vatRegister.filter(row => row.kind === 'Purchase').length)} /><MiniMetric label="Net VAT" value={money(bundle.vatSummary.netVat)} /></View>;
+  if (kind === 'tds-register')
+    return <View style={styles.highlights}><MiniMetric label="Entries" value={String(bundle.tdsRegister.length)} /><MiniMetric label="Tax base" value={money(bundle.tdsRegister.reduce((sum, row) => sum + row.base, 0))} /><MiniMetric label="TDS withheld" value={money(bundle.tdsRegister.reduce((sum, row) => sum + row.tds, 0))} /></View>;
   return (
     <View style={styles.highlights}>
       <MiniMetric label="Debit total" value={money(bundle.trialBalance.totalDebit)} />
@@ -231,7 +236,7 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
   );
 }
 function formatCell(value: string | number | undefined, column: string) {
-  if (typeof value === 'number' && (column === 'Amount' || column === 'Debit' || column === 'Credit' || column === 'Total' || column === 'Paid' || column === 'Outstanding' || column === 'Taxable' || column === 'VAT' || column === 'Gross' || column.includes('value') || column === 'Margin'))
+  if (typeof value === 'number' && (column === 'Amount' || column === 'Debit' || column === 'Credit' || column === 'Total' || column === 'Paid' || column === 'Outstanding' || column === 'Taxable' || column === 'VAT' || column === 'Gross' || column === 'Base' || column === 'TDS' || column.includes('value') || column === 'Margin'))
     return money(value); return String(value ?? '—');
 }
 
