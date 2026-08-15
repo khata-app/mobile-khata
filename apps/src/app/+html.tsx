@@ -19,7 +19,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
         {/* Keep pinch-zoom available for users who need larger text or controls. */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
         />
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.
@@ -41,6 +41,15 @@ const responsiveBackground = `
 body {
   background-color: #F3E9D8;
   margin: 0;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+html, #root {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
 }
 @media (prefers-color-scheme: dark) {
   body {
