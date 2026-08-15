@@ -23,6 +23,8 @@ export type CompanySetup = {
   confirmations: boolean;
 };
 
+export type Party = { id: string; name: string; type: 'customer' | 'supplier'; phone?: string };
+
 export type PaymentStatus = 'paid' | 'pending' | 'partially_paid';
 
 export type BillLineItem = { description: string; quantity: number; unitPrice: number; amount: number };

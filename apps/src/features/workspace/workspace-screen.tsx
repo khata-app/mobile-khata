@@ -12,9 +12,9 @@ import { C, SERIF, WorkspaceScreenProvider } from '@/features/khata/ui';
 import ReportsScreen from '@/features/reports/reports-screen';
 import SettingsScreen from '@/features/settings/settings-screen';
 import { InventoryPanel } from './inventory-panel';
-import { BillsPanel, EmployeesPanel, ExpensesPanel, PurchasePanel, ReceivablesPanel, SalesInvoicePanel, SalesPanel } from './workspace-panels';
+import { BillsPanel, EmployeesPanel, ExpensesPanel, PartiesPanel, PurchasePanel, ReceivablesPanel, SalesInvoicePanel, SalesPanel } from './workspace-panels';
 
-type Section = 'dashboard' | 'purchase-scan' | 'sales-scan' | 'bills' | 'inventory' | 'sales' | 'accounting' | 'receivables' | 'expenses' | 'employees' | 'reports' | 'settings';
+type Section = 'dashboard' | 'purchase-scan' | 'sales-scan' | 'bills' | 'inventory' | 'sales' | 'accounting' | 'receivables' | 'parties' | 'expenses' | 'employees' | 'reports' | 'settings';
 
 const nav: Array<{ id: Section; label: string; icon: typeof GridIcon }> = [
   { id: 'dashboard', label: 'Overview', icon: GridIcon },
@@ -25,6 +25,7 @@ const nav: Array<{ id: Section; label: string; icon: typeof GridIcon }> = [
   { id: 'sales', label: 'Sales history', icon: BarChartIcon },
   { id: 'accounting', label: 'Accounting', icon: LedgerIcon },
   { id: 'receivables', label: 'Receivables', icon: WalletIcon },
+  { id: 'parties', label: 'Party master', icon: UsersIcon },
   { id: 'expenses', label: 'Expenses', icon: CoinsIcon },
   { id: 'employees', label: 'Team', icon: UsersIcon },
   { id: 'reports', label: 'Reports', icon: FileTextIcon },
@@ -128,6 +129,8 @@ export function WorkspaceScreen({ initialSection = 'dashboard' }: { initialSecti
                   ? <AccountingScreen />
                   : section === 'receivables'
                     ? <ReceivablesPanel />
+                    : section === 'parties'
+                      ? <PartiesPanel />
                     : section === 'expenses'
                       ? <ExpensesPanel />
                       : section === 'employees'
@@ -241,6 +244,7 @@ function CompanyMenu({ visible, onClose, company, onNavigate }: { visible: boole
     { icon: FileTextIcon, label: 'Reports', detail: 'Day book, profit and stock', onPress: () => { onClose(); onNavigate('reports'); } },
     { icon: LedgerIcon, label: 'Accounting', detail: 'Balanced vouchers and ledger lines', onPress: () => { onClose(); onNavigate('accounting'); } },
     { icon: WalletIcon, label: 'Receivables', detail: 'Customer and supplier balances', onPress: () => { onClose(); onNavigate('receivables'); } },
+    { icon: UsersIcon, label: 'Party master', detail: 'Customers, suppliers and phones', onPress: () => { onClose(); onNavigate('parties'); } },
     { icon: GearIcon, label: 'Settings', detail: 'Business details and sync', onPress: () => { onClose(); onNavigate('settings'); } },
     { icon: LogOutIcon, label: 'Sign out', detail: 'End this session on this device', onPress: async () => { onClose(); await signOut(); } },
   ];
