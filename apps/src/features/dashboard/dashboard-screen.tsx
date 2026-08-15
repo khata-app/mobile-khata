@@ -1,8 +1,9 @@
 import type { Benefit, Bill, Employee, Expense, InventoryItem, Sale } from '@/features/khata/types';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { AlertTriangleIcon, ArrowRightIcon, BarChartIcon, BoxIcon, BuyIcon, CameraIcon, CoinsIcon, FileTextIcon, GearIcon, ReceiptIcon, SellIcon, UsersIcon } from '@/features/khata/icons';
+import { AlertTriangleIcon, ArrowRightIcon, BarChartIcon, BoxIcon, BuyIcon, CameraIcon, CoinsIcon, FileTextIcon, GearIcon, ReceiptIcon, SellIcon, UsersIcon, WalletIcon } from '@/features/khata/icons';
 import { C, Card, Eyebrow, Screen, SectionHeader, SERIF, Text, Title } from '@/features/khata/ui';
+import { buildInsights } from '@/features/insights/insight-utils';
 
 type Props = {
   bills: Bill[];
@@ -34,6 +35,7 @@ export function DashboardScreen({ bills, inventory, sales, expenses, employees, 
     const lowStock = inventory.filter(item => item.stock <= item.reorderLevel || item.stock <= item.dailyRequirement * 7);
     return { revenue, profit: revenue - cost - expensesTotal, purchases, expensesTotal, lowStock, monthSales, monthBills };
   }, [benefits, bills, expenses, inventory, month, sales]);
+  const insights = useMemo(() => buildInsights({ bills, inventory, sales }), [bills, inventory, sales]);
 
   const destinations = [
     { section: 'purchase-scan', label: 'Buy', detail: 'Add a supplier bill', icon: BuyIcon, tone: 'brick' as const },
@@ -41,6 +43,7 @@ export function DashboardScreen({ bills, inventory, sales, expenses, employees, 
     { section: 'bills', label: 'Bills', detail: `${bills.length} saved`, icon: ReceiptIcon },
     { section: 'inventory', label: 'Stock', detail: summary.lowStock.length ? `${summary.lowStock.length} running low` : `${inventory.length} products`, icon: BoxIcon },
     { section: 'sales', label: 'Sales', detail: `${sales.length} entries`, icon: BarChartIcon },
+    { section: 'receivables', label: 'Balances', detail: 'Receivables and payables', icon: WalletIcon },
     { section: 'expenses', label: 'Expenses', detail: 'Running costs', icon: CoinsIcon },
     { section: 'employees', label: 'Team', detail: `${employees.filter(item => item.status === 'active').length} people`, icon: UsersIcon },
     { section: 'reports', label: 'Reports', detail: 'Profit, tax and stock', icon: FileTextIcon },
@@ -85,6 +88,19 @@ export function DashboardScreen({ bills, inventory, sales, expenses, employees, 
         <Summary label="Profit after expenses" value={money(summary.profit)} />
         <Summary label="Purchases" value={money(summary.purchases)} />
         <Summary label="Stock to check" value={String(summary.lowStock.length)} warning={summary.lowStock.length > 0} />
+      </View>
+
+      <SectionHeader title="Smart follow-ups" detail="Small actions that protect cash and stock" />
+      <View style={styles.insights}>
+        {insights.map(insight => (
+          <Pressable key={insight.id} onPress={() => onNavigate(insight.section)} style={({ pressed }) => [styles.insight, insight.tone === 'red' && styles.insightRed, insight.tone === 'gold' && styles.insightGold, pressed && styles.pressed]}>
+            <View style={styles.insightCopy}>
+              <Text style={styles.insightTitle}>{insight.title}</Text>
+              <Text style={styles.insightDetail}>{insight.detail}</Text>
+            </View>
+            <View style={styles.insightAction}><Text style={styles.insightActionText}>{insight.id === 'margin' ? `${Math.round(insight.amount || 0)}%` : insight.amount ? money(insight.amount) : 'Open'}</Text><ArrowRightIcon size={14} color={insight.tone === 'red' ? C.red : insight.tone === 'gold' ? C.goldDark : C.greenDark} /></View>
+          </Pressable>
+        ))}
       </View>
 
       <SectionHeader title="Everything in your book" detail="Tap any tool to open it" />
@@ -194,6 +210,15 @@ const styles = StyleSheet.create({
   summaryLabel: { color: 'rgba(250,243,229,0.63)', fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   summaryValue: { color: C.paperLight, fontSize: 19, fontWeight: '800', fontFamily: SERIF, marginTop: 7 },
   summaryWarning: { color: '#E7C37B' },
+  insights: { gap: 8 },
+  insight: { minHeight: 66, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, backgroundColor: C.greenLight, borderColor: C.green, borderWidth: 1, borderRadius: 9 },
+  insightRed: { backgroundColor: C.redLight, borderColor: '#D9A693' },
+  insightGold: { backgroundColor: C.yellowLight, borderColor: C.gold },
+  insightCopy: { flex: 1, minWidth: 0, gap: 4 },
+  insightTitle: { color: C.ink, fontSize: 13, fontWeight: '900' },
+  insightDetail: { color: C.muted, fontSize: 11, lineHeight: 16 },
+  insightAction: { alignItems: 'flex-end', gap: 4 },
+  insightActionText: { color: C.ink, fontSize: 11, fontWeight: '900' },
   tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   tile: { flexGrow: 1, flexBasis: 230, minWidth: 205, minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 11, padding: 12, backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1, borderRadius: 9 },
   tileCompact: { flexBasis: 145, minWidth: 140 },

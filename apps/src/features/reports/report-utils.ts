@@ -23,6 +23,8 @@ export type DayBookRow = {
 
 export type TrialBalanceLine = { account: string; debit: number; credit: number };
 export type StockReportLine = { id: string; name: string; category: string; unit: string; quantity: number; value: number; sellingValue: number; margin: number; low: boolean };
+export type AgeingLine = { id: string; party: string; date: string; reference: string; total: number; paid: number; outstanding: number; bucket: '0-30 days' | '31-60 days' | '61-90 days' | '90+ days' };
+export type VatRegisterLine = { id: string; kind: 'Sale' | 'Purchase'; date: string; party: string; reference: string; taxable: number; vat: number; gross: number };
 
 export type ReportBundle = {
   period: ReportPeriod;
@@ -33,11 +35,20 @@ export type ReportBundle = {
   balanceSheet: { assets: Array<{ label: string; amount: number }>; liabilities: Array<{ label: string; amount: number }>; equity: number; totalAssets: number; totalLiabilitiesAndEquity: number };
   vatSummary: { rate: number; salesGross: number; outputVat: number; purchaseGross: number; inputVat: number; netVat: number };
   stockReport: StockReportLine[];
+  receivablesAgeing: AgeingLine[];
+  payablesAgeing: AgeingLine[];
+  vatRegister: VatRegisterLine[];
 };
 
 const paymentAccount = (payment: string) => payment === 'Credit' ? 'Accounts payable / receivable' : payment === 'Bank transfer' || payment === 'Online payment' ? 'Bank' : 'Cash';
 const inPeriod = (date: string, period: ReportPeriod) => period === 'all' || date.startsWith(period);
 const round = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+const paymentStatus = (payment: string, status: Sale['paymentStatus'] | Bill['paymentStatus']) => status || (payment === 'Credit' ? 'pending' : 'paid');
+const outstandingAmount = (total: number, paid: number | undefined, payment: string, status: Sale['paymentStatus'] | Bill['paymentStatus']) => paymentStatus(payment, status) === 'paid' ? 0 : Math.max(0, total - (paid || 0));
+function ageingBucket(date: string): AgeingLine['bucket'] {
+  const days = Math.max(0, Math.floor((Date.now() - new Date(`${date}T00:00:00`).getTime()) / 86400000));
+  return days <= 30 ? '0-30 days' : days <= 60 ? '31-60 days' : days <= 90 ? '61-90 days' : '90+ days';
+}
 
 export function buildReports(input: ReportInputs, period: ReportPeriod = 'all'): ReportBundle {
   const bills = input.bills.filter(item => inPeriod(item.date, period));
@@ -102,7 +113,13 @@ export function buildReports(input: ReportInputs, period: ReportPeriod = 'all'):
   const totalAssets = round(assets.reduce((sum, item) => sum + item.amount, 0));
   const totalLiabilities = round(liabilities.reduce((sum, item) => sum + item.amount, 0));
   const equity = round(totalAssets - totalLiabilities);
-  return { period, periodLabel: period === 'all' ? 'All recorded entries' : period, dayBook, trialBalance: { lines: trialLines, totalDebit: balancedDebit, totalCredit: balancedCredit }, profitLoss: { revenue, costOfGoodsSold, grossProfit, expenses: expensesTotal, benefits: benefitsTotal, netProfit, margin: revenue ? round((grossProfit / revenue) * 100) : 0 }, balanceSheet: { assets, liabilities, equity, totalAssets, totalLiabilitiesAndEquity: round(totalLiabilities + equity) }, vatSummary: { rate, salesGross: revenue, outputVat: round(outputVat), purchaseGross: round(bills.reduce((sum, item) => sum + item.total, 0)), inputVat: round(inputVat), netVat: round(outputVat - inputVat) }, stockReport };
+  const receivablesAgeing = sales.map(item => ({ id: item.id, party: item.customer, date: item.date, reference: item.id, total: round(item.total), paid: round(item.paidAmount || 0), outstanding: round(outstandingAmount(item.total, item.paidAmount, item.payment, item.paymentStatus)), bucket: ageingBucket(item.date) })).filter(item => item.outstanding > 0);
+  const payablesAgeing = bills.map(item => ({ id: item.id, party: item.vendor, date: item.date, reference: item.invoice || item.id, total: round(item.total), paid: round(item.paidAmount || 0), outstanding: round(outstandingAmount(item.total, item.paidAmount, item.payment, item.paymentStatus)), bucket: ageingBucket(item.date) })).filter(item => item.outstanding > 0);
+  const vatRegister: VatRegisterLine[] = [
+    ...sales.map(item => ({ id: `${item.id}-output`, kind: 'Sale' as const, date: item.date, party: item.customer, reference: item.id, taxable: round(item.total / (100 + rate) * 100), vat: round(item.total - (item.total / (100 + rate) * 100)), gross: round(item.total) })),
+    ...bills.map(item => ({ id: `${item.id}-input`, kind: 'Purchase' as const, date: item.date, party: item.vendor, reference: item.invoice || item.id, taxable: round(Math.max(0, item.total - item.vat)), vat: round(item.vat), gross: round(item.total) })),
+  ].sort((a, b) => b.date.localeCompare(a.date));
+  return { period, periodLabel: period === 'all' ? 'All recorded entries' : period, dayBook, trialBalance: { lines: trialLines, totalDebit: balancedDebit, totalCredit: balancedCredit }, profitLoss: { revenue, costOfGoodsSold, grossProfit, expenses: expensesTotal, benefits: benefitsTotal, netProfit, margin: revenue ? round((grossProfit / revenue) * 100) : 0 }, balanceSheet: { assets, liabilities, equity, totalAssets, totalLiabilitiesAndEquity: round(totalLiabilities + equity) }, vatSummary: { rate, salesGross: revenue, outputVat: round(outputVat), purchaseGross: round(bills.reduce((sum, item) => sum + item.total, 0)), inputVat: round(inputVat), netVat: round(outputVat - inputVat) }, stockReport, receivablesAgeing, payablesAgeing, vatRegister };
 }
 
 export function reportRows(bundle: ReportBundle, kind: string): Array<Record<string, string | number>> {
@@ -111,6 +128,9 @@ export function reportRows(bundle: ReportBundle, kind: string): Array<Record<str
   if (kind === 'profit-loss') return [{ Line: 'Sales revenue', Amount: bundle.profitLoss.revenue }, { Line: 'Cost of goods sold', Amount: bundle.profitLoss.costOfGoodsSold }, { Line: 'Gross profit', Amount: bundle.profitLoss.grossProfit }, { Line: 'Operating expenses', Amount: bundle.profitLoss.expenses }, { Line: 'Employee benefits', Amount: bundle.profitLoss.benefits }, { Line: 'Net profit', Amount: bundle.profitLoss.netProfit }];
   if (kind === 'balance-sheet') return [...bundle.balanceSheet.assets.map(row => ({ Section: 'Assets', Line: row.label, Amount: row.amount })), ...bundle.balanceSheet.liabilities.map(row => ({ Section: 'Liabilities', Line: row.label, Amount: row.amount })), { Section: 'Equity', Line: 'Equity / retained earnings', Amount: bundle.balanceSheet.equity }];
   if (kind === 'vat-summary') return [{ Line: 'Sales gross', Amount: bundle.vatSummary.salesGross }, { Line: 'Output VAT', Amount: bundle.vatSummary.outputVat }, { Line: 'Purchases gross', Amount: bundle.vatSummary.purchaseGross }, { Line: 'Input VAT', Amount: bundle.vatSummary.inputVat }, { Line: 'Net VAT payable / credit', Amount: bundle.vatSummary.netVat }];
+  if (kind === 'receivables-ageing') return bundle.receivablesAgeing.map(row => ({ Party: row.party, Date: row.date, Reference: row.reference, Bucket: row.bucket, Total: row.total, Paid: row.paid, Outstanding: row.outstanding }));
+  if (kind === 'payables-ageing') return bundle.payablesAgeing.map(row => ({ Party: row.party, Date: row.date, Reference: row.reference, Bucket: row.bucket, Total: row.total, Paid: row.paid, Outstanding: row.outstanding }));
+  if (kind === 'vat-register') return bundle.vatRegister.map(row => ({ Type: row.kind, Date: row.date, Party: row.party, Reference: row.reference, Taxable: row.taxable, VAT: row.vat, Gross: row.gross }));
   return bundle.stockReport.map(row => ({ Product: row.name, Category: row.category, Quantity: row.quantity, Unit: row.unit, 'Stock value': row.value, 'Selling value': row.sellingValue, Margin: row.margin, Status: row.low ? 'Low stock' : 'Healthy' }));
 }
 

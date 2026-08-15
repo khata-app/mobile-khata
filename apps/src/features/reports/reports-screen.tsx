@@ -4,12 +4,12 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { BoxIcon, BuildingIcon, DownloadIcon, LedgerIcon, ReceiptIcon, ScaleIcon, TrendingUpIcon } from '@/features/khata/icons';
+import { BoxIcon, BuildingIcon, DownloadIcon, LedgerIcon, ReceiptIcon, ScaleIcon, TrendingUpIcon, WalletIcon } from '@/features/khata/icons';
 import { useKhataStore } from '@/features/khata/store';
 import { Button, C, Card, Chip, Eyebrow, Screen, SectionHeader, Text, Title } from '@/features/khata/ui';
 import { buildReports, reportRows, rowsToCsv } from './report-utils';
 
-type ReportKind = 'day-book' | 'trial-balance' | 'profit-loss' | 'balance-sheet' | 'vat-summary' | 'stock-report';
+type ReportKind = 'day-book' | 'trial-balance' | 'profit-loss' | 'balance-sheet' | 'vat-summary' | 'stock-report' | 'receivables-ageing' | 'payables-ageing' | 'vat-register';
 
 const reportKinds: Array<{ id: ReportKind; title: string; description: string; icon: typeof LedgerIcon }> = [
   { id: 'day-book', title: 'Day book', description: 'Every sale, purchase and payment', icon: LedgerIcon },
@@ -17,6 +17,9 @@ const reportKinds: Array<{ id: ReportKind; title: string; description: string; i
   { id: 'profit-loss', title: 'Profit & loss', description: 'Income, cost and expenses', icon: TrendingUpIcon },
   { id: 'balance-sheet', title: 'Balance sheet', description: 'What the business owns and owes', icon: BuildingIcon },
   { id: 'vat-summary', title: 'VAT summary', description: 'Output and input VAT', icon: ReceiptIcon },
+  { id: 'vat-register', title: 'VAT register', description: 'Transaction-level tax lines', icon: ReceiptIcon },
+  { id: 'receivables-ageing', title: 'Receivables ageing', description: 'Customer balances by age', icon: WalletIcon },
+  { id: 'payables-ageing', title: 'Payables ageing', description: 'Supplier balances by age', icon: WalletIcon },
   { id: 'stock-report', title: 'Stock report', description: 'Quantity, value and reorder pressure', icon: BoxIcon },
 ];
 
@@ -184,6 +187,12 @@ function heroValue(kind: ReportKind, bundle: ReportBundle) {
     return money(bundle.vatSummary.netVat);
   if (kind === 'stock-report')
     return money(bundle.stockReport.reduce((sum, row) => sum + row.value, 0));
+  if (kind === 'receivables-ageing')
+    return money(bundle.receivablesAgeing.reduce((sum, row) => sum + row.outstanding, 0));
+  if (kind === 'payables-ageing')
+    return money(bundle.payablesAgeing.reduce((sum, row) => sum + row.outstanding, 0));
+  if (kind === 'vat-register')
+    return `${bundle.vatRegister.length} tax lines`;
   if (kind === 'trial-balance')
     return `${money(bundle.trialBalance.totalDebit)} balanced`;
   return `${bundle.dayBook.length} journal lines`;
@@ -198,6 +207,12 @@ function ReportHighlights({ bundle, kind }: { bundle: ReportBundle; kind: Report
     return <View style={styles.highlights}>{[['Output VAT', bundle.vatSummary.outputVat], ['Input VAT', bundle.vatSummary.inputVat], ['Net payable / credit', bundle.vatSummary.netVat]].map(([label, value]) => <MiniMetric key={String(label)} label={String(label)} value={money(Number(value))} />)}</View>;
   if (kind === 'stock-report')
     return <View style={styles.highlights}>{[['Stock value', bundle.stockReport.reduce((sum, row) => sum + row.value, 0)], ['Selling value', bundle.stockReport.reduce((sum, row) => sum + row.sellingValue, 0)], ['Low stock', bundle.stockReport.filter(row => row.low).length]].map(([label, value]) => <MiniMetric key={String(label)} label={String(label)} value={typeof value === 'number' && label !== 'Low stock' ? money(value) : String(value)} />)}</View>;
+  if (kind === 'receivables-ageing')
+    return <View style={styles.highlights}><MiniMetric label="Open customers" value={String(bundle.receivablesAgeing.length)} /><MiniMetric label="Outstanding" value={money(bundle.receivablesAgeing.reduce((sum, row) => sum + row.outstanding, 0))} /><MiniMetric label="Oldest bucket" value={bundle.receivablesAgeing[0]?.bucket || 'Clear'} /></View>;
+  if (kind === 'payables-ageing')
+    return <View style={styles.highlights}><MiniMetric label="Open suppliers" value={String(bundle.payablesAgeing.length)} /><MiniMetric label="Outstanding" value={money(bundle.payablesAgeing.reduce((sum, row) => sum + row.outstanding, 0))} /><MiniMetric label="Oldest bucket" value={bundle.payablesAgeing[0]?.bucket || 'Clear'} /></View>;
+  if (kind === 'vat-register')
+    return <View style={styles.highlights}><MiniMetric label="Sales lines" value={String(bundle.vatRegister.filter(row => row.kind === 'Sale').length)} /><MiniMetric label="Purchase lines" value={String(bundle.vatRegister.filter(row => row.kind === 'Purchase').length)} /><MiniMetric label="Net VAT" value={money(bundle.vatSummary.netVat)} /></View>;
   return (
     <View style={styles.highlights}>
       <MiniMetric label="Debit total" value={money(bundle.trialBalance.totalDebit)} />
@@ -216,7 +231,7 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
   );
 }
 function formatCell(value: string | number | undefined, column: string) {
-  if (typeof value === 'number' && (column === 'Amount' || column === 'Debit' || column === 'Credit' || column.includes('value') || column.includes('VAT') || column === 'Margin'))
+  if (typeof value === 'number' && (column === 'Amount' || column === 'Debit' || column === 'Credit' || column === 'Total' || column === 'Paid' || column === 'Outstanding' || column === 'Taxable' || column === 'VAT' || column === 'Gross' || column.includes('value') || column === 'Margin'))
     return money(value); return String(value ?? '—');
 }
 
@@ -245,7 +260,7 @@ const styles = StyleSheet.create({
   periodText: { color: C.muted, fontSize: 12, fontWeight: '800' },
   periodTextActive: { color: C.white },
   reportTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  reportTab: { flex: 1, minWidth: 220, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 11, backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1 },
+  reportTab: { flex: 1, flexBasis: 190, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 11, backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1 },
   reportTabActive: { backgroundColor: C.brickDark, borderColor: C.brickDark },
   reportIcon: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.redLight, borderColor: '#DDB5A7', borderWidth: 1, transform: [{ rotate: '-2deg' }] },
   reportIconActive: { backgroundColor: C.brick, borderColor: C.paperLight },
