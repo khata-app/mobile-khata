@@ -182,7 +182,7 @@ function Sidebar({ active, onNavigate, company }: { active: Section; onNavigate:
   return (
     <View style={styles.sidebar}>
       <Brand onPress={() => router.replace('/')} />
-      <Pressable onPress={() => router.push('/company')} style={({ pressed }) => [styles.companyChip, pressed && { opacity: 0.85 }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Open company profile" onPress={() => router.push('/company')} style={({ pressed }) => [styles.companyChip, pressed && { opacity: 0.85 }]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.companyName}>{company}</Text>
           <Text style={styles.companyMeta}>NPR · Kathmandu</Text>
@@ -192,7 +192,7 @@ function Sidebar({ active, onNavigate, company }: { active: Section; onNavigate:
       <View style={styles.nav}>{nav.map(item => <NavButton key={item.id} item={item} active={active === item.id} onPress={() => onNavigate(item.id)} />)}</View>
       <View style={styles.sidebarFooter}>
         <Text style={styles.footerText}>A clear book makes room for a better business.</Text>
-        <Pressable onPress={signOut} style={styles.footerLink}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Sign out" onPress={signOut} style={styles.footerLink}>
           <LogOutIcon size={15} color="#E4C077" />
           <Text style={styles.footerLinkText}>Sign out</Text>
         </Pressable>
@@ -204,7 +204,7 @@ function Sidebar({ active, onNavigate, company }: { active: Section; onNavigate:
 function NavButton({ item, active, onPress }: { item: (typeof nav)[number]; active: boolean; onPress: () => void }) {
   const Icon = item.icon;
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.navButton, active && styles.navButtonActive, pressed && { opacity: 0.78 }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={item.label} accessibilityState={{ selected: active }} onPress={onPress} style={({ pressed }) => [styles.navButton, active && styles.navButtonActive, pressed && { opacity: 0.78 }]}>
       <View style={[styles.navIcon, active && styles.navIconActive]}><Icon size={16} color={active ? C.white : 'rgba(255,255,255,0.72)'} /></View>
       <Text style={[styles.navLabel, active && styles.navLabelActive]}>{item.label}</Text>
     </Pressable>
@@ -216,7 +216,7 @@ function MobileHeader({ active, onNavigate, onBack, company }: { active: Section
   const sectionLabel = nav.find(item => item.id === active)?.label || 'Overview';
   return (
     <View style={styles.mobileHeader}>
-      {active !== 'dashboard' && <Pressable accessibilityLabel="Go back" onPress={onBack} style={styles.backButton}><ChevronLeftIcon size={20} color={C.ink} /></Pressable>}
+      {active !== 'dashboard' && <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} style={styles.backButton}><ChevronLeftIcon size={20} color={C.ink} /></Pressable>}
       <Brand compact onPress={() => Platform.OS === 'web' ? router.replace('/') : onNavigate('dashboard')} />
       <View style={styles.mobileHeaderCopy}>
         <Text style={styles.mobileCompany} numberOfLines={1}>{company}</Text>
@@ -238,7 +238,7 @@ function CompanyMenu({ visible, onClose, company, onNavigate }: { visible: boole
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={styles.menuCard}>
+        <Pressable style={styles.menuCard} onPress={() => {}}>
           <View style={styles.menuHead}>
             <KhataLogo size={34} />
             <View style={{ flex: 1 }}>
@@ -249,7 +249,7 @@ function CompanyMenu({ visible, onClose, company, onNavigate }: { visible: boole
           </View>
           {items.map((item) => {
             const Icon = item.icon; return (
-              <Pressable key={item.label} onPress={item.onPress} style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.75 }]}>
+              <Pressable accessibilityRole="button" accessibilityLabel={item.label} key={item.label} onPress={item.onPress} style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.75 }]}>
                 <View style={styles.menuIconBox}><Icon size={17} color={C.brick} /></View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.menuItemText}>{item.label}</Text>
@@ -259,7 +259,7 @@ function CompanyMenu({ visible, onClose, company, onNavigate }: { visible: boole
               </Pressable>
             );
           })}
-        </View>
+        </Pressable>
       </Pressable>
     </Modal>
   );
@@ -270,7 +270,7 @@ function MobileNavigation({ active, onNavigate }: { active: Section; onNavigate:
     <View style={styles.mobileNav}>
       {mobileNav.map((item) => {
         const Icon = item.icon; return (
-          <Pressable accessibilityRole="button" key={item.id} onPress={() => onNavigate(item.id)} style={({ pressed }) => [styles.mobileNavItem, pressed && { opacity: 0.7 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={item.label} accessibilityState={{ selected: active === item.id }} key={item.id} onPress={() => onNavigate(item.id)} style={({ pressed }) => [styles.mobileNavItem, pressed && { opacity: 0.7 }]}>
             <View style={[styles.mobileNavIcon, active === item.id && styles.mobileNavIconActive]}><Icon size={19} color={active === item.id ? C.brick : C.muted} /></View>
             <Text style={[styles.mobileNavLabel, active === item.id && styles.mobileNavLabelActive]}>{item.label}</Text>
           </Pressable>

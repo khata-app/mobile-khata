@@ -4,7 +4,15 @@ export const storage = createMMKV();
 
 export function getItem<T>(key: string): T | null {
   const value = storage.getString(key);
-  return value ? JSON.parse(value) || null : null;
+  if (!value) return null;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    // A partial write or an older schema should not prevent the app from
+    // starting. Drop only the invalid entry and let the caller rebuild it.
+    storage.remove(key);
+    return null;
+  }
 }
 
 export async function setItem<T>(key: string, value: T) {

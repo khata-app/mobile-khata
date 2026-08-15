@@ -13,6 +13,7 @@ const getErrorMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   if (/invalid login credentials/i.test(message)) return 'Incorrect email or password. Please try again.';
   if (/already registered/i.test(message)) return 'An account already exists for this email. Please sign in instead.';
+  if (/confirm|check your email/i.test(message)) return message;
   if (/rate limit/i.test(message)) return 'Too many attempts. Please wait a moment and try again.';
   if (/network|fetch|failed/i.test(message)) return 'Could not reach the server. Check your connection and try again.';
   return message;
@@ -119,6 +120,8 @@ export function LoginForm({ onSubmit = async () => {}, mode = 'login', onModeCha
                 leftIcon={<LockIcon size={18} color={C.muted} />}
                 rightIcon={(
                   <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                     testID="toggle-password"
                     onPress={() => setShowPassword(current => !current)}
                     hitSlop={8}
@@ -144,6 +147,8 @@ export function LoginForm({ onSubmit = async () => {}, mode = 'login', onModeCha
             )} />
 
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={register ? 'Switch to sign in' : 'Switch to account registration'}
               onPress={() => onModeChange?.(register ? 'login' : 'register')}
               style={({ pressed }) => [styles.switchLink, pressed && { opacity: 0.7 }]}
             >

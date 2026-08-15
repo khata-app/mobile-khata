@@ -16,14 +16,10 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta name="description" content="Khata is a calm, practical accounting workspace for Nepal's small and medium scale businesses." />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
-        {/*
-          This viewport disables scaling which makes the mobile website act more like a native app.
-          However this does reduce built-in accessibility. If you want to enable scaling, use this instead:
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-        */}
+        {/* Keep pinch-zoom available for users who need larger text or controls. */}
         <meta
           name="viewport"
-          content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1.00001,viewport-fit=cover"
+          content="width=device-width, initial-scale=1.0, viewport-fit=cover"
         />
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.

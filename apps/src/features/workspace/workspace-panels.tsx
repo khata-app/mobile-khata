@@ -108,29 +108,25 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
   const [review, setReview] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [pendingDocument, setPendingDocument] = useState<CaptureAsset | null>(null);
   const update = (key: string, value: string) => setForm(current => ({ ...current, [key]: value }));
   const scanDocument = async (source: 'camera' | 'gallery') => {
     const asset = await pickBill(source);
     if (!asset) { setStatus('No image selected. You can still enter the purchase manually.'); return; }
     setCaptureOpen(false);
+    setPendingDocument(null);
     setScanning(true);
     setStatus('Reading the bill. You will check every field before saving.');
     try {
       const extracted = await scanBill(asset.base64, asset.mimeType);
-      if (businessId) {
-        try {
-          await saveBillDocument(businessId, asset.base64, asset.mimeType, extracted);
-        }
-        catch {
-          setStatus('The fields are ready, but the original image could not be attached.');
-        }
-      }
+      setPendingDocument(asset);
       setMode('review');
       setReview(true);
       setForm({ vendor: extracted.vendor, invoice: extracted.invoice, total: String(extracted.total || ''), vat: String(extracted.vat || ''), payment: 'Cash' });
       setStatus(`Bill read · ${Math.round(extracted.confidence * 100)}% match. Check the fields before saving.`);
     }
     catch (error) {
+      setPendingDocument(null);
       setReview(true);
       setStatus(error instanceof Error ? error.message : 'The bill could not be read. Enter it manually.');
     }
@@ -138,11 +134,29 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
       setScanning(false);
     }
   };
-  const scanDemo = () => { setMode('review'); setReview(true); setForm({ vendor: 'Bhatbhateni Supermarket', invoice: 'PUR-1042', total: '8200', vat: '1066', payment: 'Cash' }); setStatus('Demo extraction loaded. Review each field before saving.'); };
-  const startManual = () => { setMode('manual'); setReview(false); setStatus('Manual entry ready.'); };
-  const save = () => {
+  const scanDemo = () => { setPendingDocument(null); setMode('review'); setReview(true); setForm({ vendor: 'Bhatbhateni Supermarket', invoice: 'PUR-1042', total: '8200', vat: '1066', payment: 'Cash' }); setStatus('Demo extraction loaded. Review each field before saving.'); };
+  const startManual = () => { setPendingDocument(null); setMode('manual'); setReview(false); setStatus('Manual entry ready.'); };
+  const save = async () => {
     if (!form.vendor || !num(form.total))
-      return; addBill({ vendor: form.vendor, invoice: form.invoice || 'PUR-DRAFT', date: new Date().toISOString().slice(0, 10), total: num(form.total), vat: num(form.vat), payment: form.payment, status: 'saved' }); setStatus(businessId ? 'Purchase saved and queued for Supabase.' : 'Purchase saved to this workspace.'); setMode('start'); setReview(false); setForm({ vendor: '', invoice: '', total: '', vat: '', payment: 'Cash' }); onNavigate('bills');
+      return;
+    const bill = { vendor: form.vendor, invoice: form.invoice || 'PUR-DRAFT', date: new Date().toISOString().slice(0, 10), total: num(form.total), vat: num(form.vat), payment: form.payment, status: 'saved' as const };
+    let documentFailed = false;
+    if (businessId && pendingDocument) {
+      setStatus('Saving the purchase and its original bill…');
+      try {
+        await saveBillDocument(businessId, pendingDocument.base64, pendingDocument.mimeType, bill);
+      }
+      catch {
+        documentFailed = true;
+      }
+    }
+    addBill(bill);
+    setStatus(documentFailed ? 'Purchase saved, but the original image could not be attached.' : businessId ? 'Purchase saved and queued for Supabase.' : 'Purchase saved to this workspace.');
+    setPendingDocument(null);
+    setMode('start');
+    setReview(false);
+    setForm({ vendor: '', invoice: '', total: '', vat: '', payment: 'Cash' });
+    onNavigate('bills');
   };
   return (
     <Screen>
@@ -156,7 +170,7 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
           </View>
         </View>
         <Button label={scanning ? 'Reading bill…' : 'Open bill camera'} icon={<CameraIcon size={17} color={C.white} />} onPress={() => setCaptureOpen(true)} disabled={scanning} />
-        <Pressable onPress={startManual} disabled={scanning} style={styles.manualLink}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Enter purchase by hand" onPress={startManual} disabled={scanning} style={styles.manualLink}>
           <PlusIcon size={15} color={C.brick} />
           <Text style={styles.manualLinkText}>Enter purchase by hand</Text>
         </Pressable>
@@ -177,7 +191,7 @@ export function PurchasePanel({ onNavigate }: { onNavigate: (section: string) =>
           <View style={styles.fieldRow}><Select label="Payment method" value={form.payment} options={paymentOptions} onChange={value => update('payment', value)} /></View>
           <View style={styles.buttonRow}>
             <Button label="Save purchase" onPress={save} disabled={!form.vendor || !num(form.total)} />
-            <Button label="Cancel" variant="ghost" onPress={() => { setMode('start'); setReview(false); }} />
+            <Button label="Cancel" variant="ghost" onPress={() => { setPendingDocument(null); setMode('start'); setReview(false); }} />
             <Button label="Open bills" variant="ghost" onPress={() => onNavigate('bills')} />
           </View>
         </Card>
@@ -227,7 +241,7 @@ export function SalesInvoicePanel({ onNavigate }: { onNavigate: (section: string
   return (
     <Screen>
       <Title subtitle="Record a sale from a receipt or enter the details below.">New sale</Title>
-      <Pressable onPress={() => setCaptureOpen(true)} style={({ pressed }) => [styles.saleScan, pressed && { opacity: 0.75 }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Scan a sales receipt" onPress={() => setCaptureOpen(true)} style={({ pressed }) => [styles.saleScan, pressed && { opacity: 0.75 }]}>
         <View style={styles.saleScanIcon}><CameraIcon size={27} color={C.greenDark} /></View>
         <View style={styles.scanHeadingCopy}>
           <Text style={styles.panelTitle}>{scanning ? 'Reading receipt…' : 'Scan a receipt'}</Text>
@@ -549,7 +563,8 @@ function CaptureModal({ visible, title, busy, onClose, onChoose, onDemo }: { vis
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.captureOverlay} onPress={onClose}>
         <Pressable style={styles.captureSheet} onPress={() => {}}>
-          <View style={styles.captureHandle} />
+          <ScrollView contentContainerStyle={styles.captureScroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <View style={styles.captureHandle} />
           <View style={styles.captureMark}>
             <CameraIcon size={40} color={C.paperLight} />
             <View style={styles.focusCornerTop} />
@@ -558,24 +573,25 @@ function CaptureModal({ visible, title, busy, onClose, onChoose, onDemo }: { vis
           <Text style={styles.captureTitle}>{title}</Text>
           <Text style={styles.captureHelp}>Place the whole receipt on a flat surface with good light. You can correct every field after the photo is read.</Text>
           <View style={styles.captureButtons}>
-            <Pressable disabled={busy} onPress={() => onChoose('camera')} style={({ pressed }) => [styles.captureButton, styles.captureButtonPrimary, pressed && { opacity: 0.75 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Open camera" disabled={busy} onPress={() => onChoose('camera')} style={({ pressed }) => [styles.captureButton, styles.captureButtonPrimary, pressed && { opacity: 0.75 }]}>
               <CameraIcon size={24} color={C.paperLight} />
               <Text style={styles.captureButtonTitleLight}>Open camera</Text>
               <Text style={styles.captureButtonTextLight}>Take a new photo</Text>
             </Pressable>
-            <Pressable disabled={busy} onPress={() => onChoose('gallery')} style={({ pressed }) => [styles.captureButton, pressed && { opacity: 0.75 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Choose a photo" disabled={busy} onPress={() => onChoose('gallery')} style={({ pressed }) => [styles.captureButton, pressed && { opacity: 0.75 }]}>
               <UploadIcon size={24} color={C.brickDark} />
               <Text style={styles.captureButtonTitle}>Choose a photo</Text>
               <Text style={styles.captureButtonText}>Gallery or uploaded file</Text>
             </Pressable>
           </View>
           {onDemo && (
-            <Pressable onPress={() => { onClose(); onDemo(); }} style={styles.demoLink}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Use a sample bill" onPress={() => { onClose(); onDemo(); }} style={styles.demoLink}>
               <ReceiptIcon size={15} color={C.muted} />
               <Text style={styles.demoLinkText}>Use a sample bill</Text>
             </Pressable>
           )}
-          <Button label="Cancel" variant="ghost" onPress={onClose} />
+            <Button label="Cancel" variant="ghost" onPress={onClose} />
+          </ScrollView>
         </Pressable>
       </Pressable>
     </Modal>
@@ -617,7 +633,8 @@ const styles = StyleSheet.create({
   saleScan: { minHeight: 88, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14, backgroundColor: C.greenLight, borderColor: C.green, borderWidth: 1, borderRadius: 10 },
   saleScanIcon: { width: 48, height: 48, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderColor: C.green, borderWidth: 1, transform: [{ rotate: '2deg' }] },
   captureOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(44,33,21,0.58)', paddingHorizontal: 12, paddingBottom: 12 },
-  captureSheet: { width: '100%', maxWidth: 540, alignSelf: 'center', alignItems: 'center', gap: 12, padding: 20, paddingTop: 10, backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1, borderRadius: 18 },
+  captureSheet: { width: '100%', maxWidth: 540, maxHeight: '92%', alignSelf: 'center', backgroundColor: C.paperLight, borderColor: C.border, borderWidth: 1, borderRadius: 18, overflow: 'hidden' },
+  captureScroll: { width: '100%', alignItems: 'center', gap: 12, padding: 20, paddingTop: 10 },
   captureHandle: { width: 46, height: 4, borderRadius: 2, backgroundColor: C.border, marginBottom: 4 },
   captureMark: { width: 82, height: 82, borderRadius: 29, alignItems: 'center', justifyContent: 'center', backgroundColor: C.brickDark, borderColor: C.gold, borderWidth: 2, transform: [{ rotate: '-2deg' }] },
   focusCornerTop: { position: 'absolute', width: 55, height: 13, top: 7, borderTopColor: 'rgba(255,255,255,0.35)', borderTopWidth: 1 },

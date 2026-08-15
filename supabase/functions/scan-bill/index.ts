@@ -15,10 +15,18 @@ const extractionSchema = {
     date: { type: 'string', description: 'ISO date when visible, otherwise empty string' },
     total: { type: 'number' },
     vat: { type: 'number' },
-    confidence: { type: 'number' },
+    confidence: { type: 'number', minimum: 0, maximum: 1 },
   },
   required: ['vendor', 'invoice', 'date', 'total', 'vat', 'confidence'],
 };
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_IMAGE_BASE64_LENGTH = Math.ceil(MAX_IMAGE_BYTES / 3) * 4 + 4;
+
+function estimatedBytes(base64: string) {
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor(base64.length * 3 / 4) - padding);
+}
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders });
@@ -49,6 +57,9 @@ Deno.serve(async request => {
   if (!imageBase64 || !['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(mimeType)) {
     return jsonResponse({ error: 'invalid_image_payload' }, 400);
   }
+  if (imageBase64.length > MAX_IMAGE_BASE64_LENGTH || estimatedBytes(imageBase64) > MAX_IMAGE_BYTES) {
+    return jsonResponse({ error: 'image_too_large' }, 413);
+  }
 
   const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.5-flash';
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
@@ -58,7 +69,7 @@ Deno.serve(async request => {
       contents: [{
         parts: [
           {
-            text: 'Extract the purchase bill fields. Do not guess unreadable values. Return an empty string or 0 when a field is not visible. Amounts must be in the document currency units, not paisa.',
+            text: 'Extract the purchase bill fields. Do not guess unreadable values. Return an empty string or 0 when a field is not visible. Amounts must be in the document currency units, not paisa. Confidence must be a number between 0 and 1.',
           },
           { inlineData: { data: imageBase64, mimeType } },
         ],

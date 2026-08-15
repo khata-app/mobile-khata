@@ -10,7 +10,9 @@ const envSchema = z.object({
   EXPO_PUBLIC_BUNDLE_ID: z.string(),
   EXPO_PUBLIC_PACKAGE: z.string(),
   EXPO_PUBLIC_VERSION: z.string(),
-  EXPO_PUBLIC_API_URL: z.string().url(),
+  // The legacy feed client is optional; an empty value keeps strict builds
+  // usable when only Supabase is configured.
+  EXPO_PUBLIC_API_URL: z.string().url().or(z.literal('')),
   EXPO_PUBLIC_SUPABASE_URL: z.string().url().or(z.literal('')),
   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string(),
   EXPO_PUBLIC_ASSOCIATED_DOMAIN: z.string().url().optional(),
