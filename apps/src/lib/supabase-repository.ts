@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from './supabase';
 import type { Benefit, Bill, Company, CompanySetup, Employee, Expense, InventoryItem, Sale } from '@/features/khata/types';
+import { fromPaisa, toPaisa, validateVoucher, type Account, type PostVoucherInput, type PostedVoucher } from '@/features/accounting/domain';
 
 type ObjectValue = Record<string, unknown>;
 
@@ -107,6 +108,54 @@ export async function updateWorkspace(businessId: string, setup: CompanySetup) {
   if (error) throw new Error(errorMessage(error));
   return requiredId(data, 'Workspace was not updated');
 }
+
+export async function listAccounts(businessId: string): Promise<Account[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase.from('accounts').select('id, business_id, code, name, account_type, is_system, is_active').eq('business_id', businessId).order('code', { ascending: true });
+  if (error) throw new Error(errorMessage(error));
+  return rows(data).map(row => ({
+    id: requiredId(row.id, 'Account has no id'),
+    businessId: stringValue(row.business_id, businessId),
+    code: stringValue(row.code),
+    name: stringValue(row.name),
+    accountType: stringValue(row.account_type, 'asset') as Account['accountType'],
+    isSystem: Boolean(row.is_system),
+    isActive: row.is_active !== false,
+  }));
+}
+
+export async function postVoucher(input: PostVoucherInput): Promise<PostedVoucher> {
+  if (!isSupabaseConfigured) throw new Error('Configure Supabase before posting a voucher.');
+  validateVoucher(input);
+  const { data, error } = await supabase.rpc('post_voucher', {
+    payload: {
+      businessId: input.businessId,
+      voucherType: input.voucherType,
+      transactionDate: input.transactionDate,
+      idempotencyKey: input.idempotencyKey,
+      narration: input.narration,
+      referenceType: input.referenceType,
+      referenceId: input.referenceId,
+      lines: input.lines.map(line => ({
+        accountId: line.accountId,
+        debitPaisa: toPaisa(line.debit),
+        creditPaisa: toPaisa(line.credit),
+        description: line.description,
+      })),
+    },
+  });
+  if (error) throw new Error(errorMessage(error));
+  return { id: requiredId(data, 'Voucher was not posted'), voucherType: input.voucherType, transactionDate: input.transactionDate, status: 'posted' };
+}
+
+export async function reverseVoucher(businessId: string, voucherId: string, transactionDate: string, idempotencyKey: string) {
+  if (!isSupabaseConfigured) throw new Error('Configure Supabase before reversing a voucher.');
+  const { data, error } = await supabase.rpc('reverse_voucher', { payload: { businessId, voucherId, transactionDate, idempotencyKey } });
+  if (error) throw new Error(errorMessage(error));
+  return requiredId(data, 'Voucher was not reversed');
+}
+
+export { fromPaisa };
 
 export async function loadWorkspace(): Promise<WorkspaceData | null> {
   if (!isSupabaseConfigured) return null;
